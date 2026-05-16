@@ -9,8 +9,10 @@ import AdminSidebar from '@/components/layout/AdminSidebar';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { isAuthenticated, user } = useAuthStore()
+  const [mounted, setMounted] = React.useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (!isAuthenticated) {
       router.push('/login')
     } else if (!user?.is_admin) {
@@ -18,6 +20,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [isAuthenticated, user, router])
 
+  if (!mounted) return null;
   if (!isAuthenticated || !user?.is_admin) return null
 
   return (

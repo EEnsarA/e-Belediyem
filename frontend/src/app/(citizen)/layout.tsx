@@ -4,12 +4,15 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import CitizenSidebar from '@/components/layout/CitizenSidebar'
 import { useAuthStore } from '@/store'
+import React from 'react'
 
 export default function CitizenLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { isAuthenticated, user } = useAuthStore()
+  const [mounted, setMounted] = React.useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (!isAuthenticated) {
       router.push('/login')
     } else if (user?.is_admin) {
@@ -17,6 +20,7 @@ export default function CitizenLayout({ children }: { children: React.ReactNode 
     }
   }, [isAuthenticated, user, router])
 
+  if (!mounted) return null;
   if (!isAuthenticated) return null
 
   return (

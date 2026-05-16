@@ -89,6 +89,8 @@ export default function RootDiscoverPage() {
   const [loginModalOpen, setLoginModalOpen] = useState(false)
   const [loginAction, setLoginAction] = useState('')
 
+  const [mounted, setMounted] = useState(false)
+
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
@@ -110,6 +112,7 @@ export default function RootDiscoverPage() {
   }, [search])
 
   useEffect(() => {
+    setMounted(true)
     const timer = setTimeout(loadData, 300)
     return () => clearTimeout(timer)
   }, [loadData])
@@ -120,6 +123,8 @@ export default function RootDiscoverPage() {
        // Let them stay if they clicked from sidebar
     }
   }, [isAuthenticated, user])
+
+  if (!mounted) return null
 
   const requireAuth = (action: string, callback: () => void) => {
     if (!isAuthenticated) {
