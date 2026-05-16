@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
@@ -22,7 +22,12 @@ interface DiscoverNavbarProps {
 export default function DiscoverNavbar({ activeTab, setActiveTab, isAuthenticated, user }: DiscoverNavbarProps) {
   const { theme, setTheme } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { logout } = useAuthStore()
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -77,7 +82,11 @@ export default function DiscoverNavbar({ activeTab, setActiveTab, isAuthenticate
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
               className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all border border-white/5"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-blue-300" />}
+              {mounted ? (
+                theme === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-blue-300" />
+              ) : (
+                <div className="w-4 h-4" />
+              )}
             </button>
 
             {isAuthenticated ? (
@@ -119,7 +128,11 @@ export default function DiscoverNavbar({ activeTab, setActiveTab, isAuthenticate
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
               className="p-2 rounded-lg bg-white/5"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-blue-300" />}
+              {mounted ? (
+                theme === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-blue-300" />
+              ) : (
+                <div className="w-4 h-4" />
+              )}
             </button>
             <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-white/60 hover:text-white">
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

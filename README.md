@@ -11,10 +11,20 @@
 
 ## 🚀 Hızlı Başlangıç
 
-### Gereksinimler
-- Docker & Docker Compose
-- Node.js 20+ (local geliştirme için)
-- Python 3.12+ (local geliştirme için)
+### 📋 Gereksinimler & Kurulum
+
+Bu projeyi yerel ortamınızda çalıştırmak için aşağıdaki araçların kurulu olması gerekmektedir:
+
+1. **Docker & Docker Compose**: 
+   - [Docker Desktop İndir](https://www.docker.com/products/docker-desktop/) (Windows için en iyi yöntem).
+   - Kurulumdan sonra terminalde `docker --version` yazarak kontrol edebilirsiniz.
+2. **Node.js 20+** (Local geliştirme için):
+   - [Node.js İndir](https://nodejs.org/) (LTS sürümü önerilir).
+   - Kurulumdan sonra terminalde `node -v` yazarak kontrol edebilirsiniz.
+3. **Python 3.12+** (Local geliştirme için):
+   - [Python İndir](https://www.python.org/downloads/).
+   - **Önemli:** Kurulum sırasında **"Add Python to PATH"** seçeneğini mutlaka işaretleyin.
+   - Kurulumdan sonra terminalde `python --version` yazarak kontrol edebilirsiniz.
 
 ### 1. Ortam değişkenlerini ayarla
 ```bash
@@ -22,9 +32,9 @@ cp .env.example .env
 # .env dosyasını düzenle (özellikle GEMINI_API_KEY)
 ```
 
-### 2. Docker Compose ile başlat
+### 2. Docker Compose ile başlat (Önerilen)
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 3. Veritabanını hazırla ve seed data ekle
@@ -32,11 +42,32 @@ docker-compose up -d
 docker exec akilli_belediye_backend python -m app.db.seed
 ```
 
+---
+
+## 🛠️ Yerel Geliştirme (Docker Olmadan)
+
+> **Dikkat:** Bu yöntem için bilgisayarınızda **PostgreSQL** ve **MinIO** servislerinin kurulu ve çalışıyor olması gerekir. Eğer bunlar kurulu değilse Docker yöntemini kullanmanız önerilir.
+
+### 1. Backend Kurulumu
+1. `backend` klasörüne gidin: `cd backend`
+2. Sanal ortam oluşturun: `python -m venv venv`
+3. Aktif edin: `.\venv\Scripts\activate` (Windows) veya `source venv/bin/activate` (Mac/Linux)
+4. Paketleri kurun: `pip install -r requirements.txt`
+5. `.env` dosyasını yapılandırın.
+6. Başlatın: `uvicorn app.main:app --reload --port 8010`
+
+### 2. Frontend Kurulumu
+1. `frontend` klasörüne gidin: `cd frontend`
+2. Paketleri kurun: `npm install`
+3. Başlatın: `npm run dev`
+
+---
+
 ### 4. Uygulamaya eriş
 | Servis | URL |
 |--------|-----|
 | Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8000/api/docs |
+| Backend API | http://localhost:8010/api/docs |
 | MinIO Console | http://localhost:9001 |
 | PostgreSQL | localhost:5432 |
 
@@ -140,11 +171,11 @@ akilli-belediye/
 ### Backend
 ```bash
 cd backend
-python -m venv .venv
-.venv/Scripts/activate  # Windows
+python -m venv venv
+.\venv\Scripts\activate  # Windows (PowerShell)
 pip install -r requirements.txt
 cp .env.example .env
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8010
 ```
 
 ### Frontend
