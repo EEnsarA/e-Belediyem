@@ -2,9 +2,11 @@
 
 import { motion } from 'framer-motion'
 import {
-  Trophy, ThumbsUp, BarChart3, Building2, Globe, Home, LogIn, UserPlus, ArrowRight
+  Trophy, ThumbsUp, BarChart3, Building2, Globe, Home, LogIn, UserPlus, ArrowRight,
+  Sun, Moon
 } from 'lucide-react'
 import Link from 'next/link'
+import { useTheme } from 'next-themes'
 
 interface DiscoverSidebarProps {
   activeTab: 'leaderboard' | 'global' | 'polls' | 'all'
@@ -14,6 +16,7 @@ interface DiscoverSidebarProps {
 }
 
 export default function DiscoverSidebar({ activeTab, setActiveTab, isAuthenticated, user }: DiscoverSidebarProps) {
+  const { theme, setTheme } = useTheme()
   const navItems = [
     { key: 'leaderboard', label: 'Liderlik Tablosu', icon: Trophy, color: 'text-amber-400' },
     { key: 'global', label: 'Öne Çıkan Şikayetler', icon: ThumbsUp, color: 'text-red-400' },
@@ -102,8 +105,19 @@ export default function DiscoverSidebar({ activeTab, setActiveTab, isAuthenticat
           )}
         </nav>
 
+        {/* Theme Toggle */}
+        <div className="px-6 pb-2">
+          <button 
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+            className="flex items-center gap-4 w-full px-5 py-3 rounded-2xl text-sm font-bold text-white/60 hover:text-white hover:bg-white/5 transition-all border border-white/5"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-blue-300" />}
+            <span className="flex-1 text-left">{theme === 'dark' ? 'Açık Tema' : 'Koyu Tema'}</span>
+          </button>
+        </div>
+
         {/* User Status Section */}
-        <div className="p-6 mt-auto">
+        <div className="p-6">
           {isAuthenticated ? (
             <div className="p-4 rounded-[2rem] bg-white/5 border border-white/10 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-black text-sm shadow-inner border border-white/20">

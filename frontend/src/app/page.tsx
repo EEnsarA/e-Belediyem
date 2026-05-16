@@ -14,7 +14,7 @@ import api from '@/lib/api/client'
 import LoginModal from '@/components/ui/LoginModal'
 import CitizenSidebar from '@/components/layout/CitizenSidebar'
 import AdminSidebar from '@/components/layout/AdminSidebar'
-import DiscoverSidebar from '@/components/layout/DiscoverSidebar'
+import DiscoverNavbar from '@/components/layout/DiscoverNavbar'
 
 interface MunicipalityData {
   id: number
@@ -159,23 +159,23 @@ export default function RootDiscoverPage() {
   const rest = leaderboard.slice(3)
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-surface-950 flex transition-all pl-64">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-surface-950 flex flex-col transition-all">
       
-      {/* Universal sidebar for Discover Page */}
-      <DiscoverSidebar 
+      {/* Universal Navbar for Discover Page */}
+      <DiscoverNavbar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         isAuthenticated={isAuthenticated}
         user={user}
       />
 
-      <main className="flex-1 w-full relative z-10 overflow-x-hidden pb-20">
+      <main className="flex-1 w-full relative z-10 overflow-x-hidden pb-20 pt-20">
         
         {/* Background Decor */}
         <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-primary-500/5 blur-[120px] pointer-events-none -z-10" />
 
         {/* Hero Header */}
-        <div className="bg-gradient-to-br from-primary-900 via-primary-800 to-violet-900 text-white relative">
+        <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-violet-800 dark:from-primary-950 dark:via-surface-900 dark:to-black text-white relative transition-all duration-500">
           {/* My Municipality Action Button */}
           <div className="absolute top-6 right-6 z-20">
             <button
@@ -193,12 +193,8 @@ export default function RootDiscoverPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center mt-4"
+              className="text-center mt-8"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full text-sm font-bold text-blue-200 mb-6 border border-white/10">
-                <Globe className="w-4 h-4 animate-pulse" />
-                e-Belediyem Platformu
-              </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4">
                 Belediyeleri <span className="text-blue-300">Keşfet</span>
               </h1>
@@ -218,6 +214,30 @@ export default function RootDiscoverPage() {
                 />
               </div>
             </motion.div>
+          </div>
+
+          {/* Horizontal Tabs Restore */}
+          <div className="max-w-6xl mx-auto px-6 pb-0">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+              {[
+                { key: 'leaderboard', label: '🏆 Liderlik Tablosu', icon: Trophy },
+                { key: 'global', label: '🔥 Öne Çıkan Şikayetler', icon: ThumbsUp },
+                { key: 'polls', label: '📊 Faaliyetler ve Anketler', icon: BarChart3 },
+                { key: 'all', label: '🗺 Tüm Belediyeler', icon: Building2 },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as any)}
+                  className={`px-6 py-3.5 text-sm font-bold rounded-t-2xl transition-all whitespace-nowrap ${
+                    activeTab === tab.key
+                      ? 'bg-[#f8fafc] dark:bg-surface-950 text-primary-900 dark:text-primary-100'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

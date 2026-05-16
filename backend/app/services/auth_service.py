@@ -23,6 +23,8 @@ MOCK_EDEVLET_USERS = {
     "11111111111": {"full_name": "Kadıköy Admin", "email": "admin.kadikoy@example.com", "district": "Kadıköy", "is_admin": True},
     "22222222222": {"full_name": "Çankaya Admin", "email": "admin.cankaya@example.com", "district": "Çankaya", "is_admin": True},
     "33333333333": {"full_name": "Konak Admin", "email": "admin.konak@example.com", "district": "Konak", "is_admin": True},
+    "44444444444": {"full_name": "Erzurum Admin", "email": "admin.erzurum@example.com", "district": "Merkez", "is_admin": True},
+    "55555555555": {"full_name": "Erzurum Vatandaşı", "email": "erzurum.vatandas@example.com", "district": "Merkez", "is_admin": False},
 }
 
 
