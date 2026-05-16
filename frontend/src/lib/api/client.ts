@@ -65,9 +65,14 @@ class ApiClient {
   }
 
   async logout() {
-    await this.client.post('/auth/logout')
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+    try {
+      await this.client.post('/auth/logout')
+    } catch (err) {
+      console.warn('Logout request failed, clearing local session anyway', err)
+    } finally {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+    }
   }
 
   // Complaints

@@ -13,18 +13,19 @@ logger = logging.getLogger(__name__)
 
 # Mock e-Devlet kullanıcı veritabanı (gerçek entegrasyonda OAuth2 ile değişir)
 MOCK_EDEVLET_USERS = {
-    "12345678901": {"full_name": "Ahmet Yılmaz", "email": "ahmet.yilmaz@example.com", "district": "Kadıköy"},
-    "23456789012": {"full_name": "Fatma Demir", "email": "fatma.demir@example.com", "district": "Kadıköy"},
-    "34567890123": {"full_name": "Mehmet Kaya", "email": "mehmet.kaya@example.com", "district": "Çankaya"},
-    "45678901234": {"full_name": "Ayşe Şahin", "email": "ayse.sahin@example.com", "district": "Çankaya"},
-    "56789012345": {"full_name": "Ali Çelik", "email": "ali.celik@example.com", "district": "Konak"},
+    "12345678901": {"full_name": "Ahmet Yilmaz", "email": "ahmet.yilmaz@example.com", "district": "Kadiköy"},
+    "23456789012": {"full_name": "Fatma Demir", "email": "fatma.demir@example.com", "district": "Kadiköy"},
+    "34567890123": {"full_name": "Mehmet Kaya", "email": "mehmet.kaya@example.com", "district": "Cankaya"},
+    "45678901234": {"full_name": "Ayse Sahin", "email": "ayse.sahin@example.com", "district": "Cankaya"},
+    "56789012345": {"full_name": "Ali Celik", "email": "ali.celik@example.com", "district": "Konak"},
     "67890123456": {"full_name": "Zeynep Arslan", "email": "zeynep.arslan@example.com", "district": "Konak"},
+    # Erzurum (Yakutiye district)
+    "44444444444": {"full_name": "Erzurum Admin", "email": "admin.erzurum@example.com", "district": "Yakutiye", "is_admin": True},
+    "55555555555": {"full_name": "Erzurum Vatandasi", "email": "erzurum.vatandas@example.com", "district": "Yakutiye", "is_admin": False},
     # Admin kullanıcıları
-    "11111111111": {"full_name": "Kadıköy Admin", "email": "admin.kadikoy@example.com", "district": "Kadıköy", "is_admin": True},
-    "22222222222": {"full_name": "Çankaya Admin", "email": "admin.cankaya@example.com", "district": "Çankaya", "is_admin": True},
+    "11111111111": {"full_name": "Kadiköy Admin", "email": "admin.kadikoy@example.com", "district": "Kadiköy", "is_admin": True},
+    "22222222222": {"full_name": "Cankaya Admin", "email": "admin.cankaya@example.com", "district": "Cankaya", "is_admin": True},
     "33333333333": {"full_name": "Konak Admin", "email": "admin.konak@example.com", "district": "Konak", "is_admin": True},
-    "44444444444": {"full_name": "Erzurum Admin", "email": "admin.erzurum@example.com", "district": "Merkez", "is_admin": True},
-    "55555555555": {"full_name": "Erzurum Vatandaşı", "email": "erzurum.vatandas@example.com", "district": "Merkez", "is_admin": False},
 }
 
 
