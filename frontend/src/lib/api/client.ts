@@ -204,6 +204,16 @@ class ApiClient {
     return res.data
   }
 
+  async getEarlyWarnings() {
+    const res = await this.client.get('/admin/early-warnings')
+    return res.data
+  }
+
+  async getAiBriefing() {
+    const res = await this.client.get('/admin/ai-briefing')
+    return res.data
+  }
+
   async generateReport(format: 'pdf' | 'docx', startDate?: string, endDate?: string, reportType = 'general') {
     const res = await this.client.post(
       '/admin/report',

@@ -48,7 +48,7 @@ export default function AdminMapPage() {
 
   const municipalityName   = user?.municipality_name ?? null
   const municipalityCenter = municipalityName ? (MUNICIPALITY_COORDS[municipalityName] ?? null) : null
-  const mapCenter          = municipalityCenter ?? [39.9208, 41.2769] as [number, number]
+  const mapCenter          = municipalityCenter ?? ([41.0082, 28.9784] as [number, number])
 
   return (
     <div>

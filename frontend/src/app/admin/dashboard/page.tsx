@@ -7,28 +7,39 @@ import {
   AlertCircle, CheckCircle2, Clock, MessageSquare, Zap, TrendingUp,
   BarChart3, Download, FileText, Bot, ArrowUp, ArrowDown
 } from 'lucide-react'
-import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend
-} from 'recharts'
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false })
-import api from '@/lib/api/client'
-import { AdminDashboard } from '@/types'
-import { StatCard, LoadingSkeleton, PageHeader } from '@/components/ui'
 import { StatusBadge } from '@/components/ui'
 import Link from 'next/link'
 
 const STATUS_COLORS = ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981']
 
+const DashboardChart = dynamic(() => import('@/components/charts/DashboardChart'), { ssr: false })
+
+import api from '@/lib/api/client'
+import { AdminDashboard, EarlyWarningResponse } from '@/types'
+import { StatCard, LoadingSkeleton, PageHeader } from '@/components/ui'
+
 export default function AdminDashboardPage() {
   const [data, setData] = useState<AdminDashboard | null>(null)
+  const [earlyWarnings, setEarlyWarnings] = useState<EarlyWarningResponse | null>(null)
+  const [aiBriefing, setAiBriefing] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Ana veriler
     api.getAdminDashboard()
       .then(setData)
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
+
+    // Radar arka planda taranır, sayfayı bloke etmez
+    api.getEarlyWarnings()
+      .then(setEarlyWarnings)
+      .catch(() => { })
+
+    // AI Brifing arka planda taranır
+    api.getAiBriefing()
+      .then(res => setAiBriefing(res.summary))
+      .catch(() => { })
   }, [])
 
   if (loading) return (
@@ -46,14 +57,51 @@ export default function AdminDashboardPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <PageHeader 
-          title="Yönetim Paneli" 
+        <PageHeader
+          title="Yönetim Paneli"
           description={new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         />
         <Link href="/admin/reports" className="btn-primary">
           <Download className="w-4 h-4" /> Veri Raporu Al
         </Link>
       </div>
+
+      {/* AI Erken Uyarı Radarı */}
+      {earlyWarnings && earlyWarnings.alerts.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/10 border border-red-100 dark:border-red-900/30 rounded-3xl p-6 shadow-sm">
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+            <AlertCircle className="w-32 h-32 text-red-500 animate-pulse" />
+          </div>
+
+          <div className="flex items-center gap-3 mb-6 relative z-10">
+            <div className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </div>
+            <h3 className="text-red-600 dark:text-red-400 font-black tracking-wide uppercase text-sm">AI Erken Uyarı Radarı</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+            {earlyWarnings.alerts.map((alert, i) => (
+              <div key={i} className="bg-white/60 dark:bg-surface-900/60 backdrop-blur-md p-5 rounded-2xl border border-red-100 dark:border-red-900/20 hover:shadow-md transition-all">
+                <div className="flex justify-between items-start mb-3">
+                  <h4 className="font-bold text-surface-900 dark:text-surface-50 text-sm">{alert.title}</h4>
+                  <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-lg ${alert.risk_level === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' :
+                      'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400'
+                    }`}>
+                    {alert.location}
+                  </span>
+                </div>
+                <p className="text-xs text-surface-600 dark:text-surface-400 mb-4 leading-relaxed">{alert.description}</p>
+                <div className="bg-white dark:bg-surface-800 p-3 rounded-xl border border-red-100 dark:border-red-900/20 text-xs text-red-600 dark:text-red-400 font-medium flex items-start gap-2">
+                  <Zap className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span><strong className="font-bold">Öneri:</strong> {alert.action_recommended}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Main Stats Area */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -120,20 +168,8 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500" /> Çözülen</div>
               </div>
             </div>
-            <div className="card p-8 min-h-[300px]">
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={data.weekly_trend}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                  />
-                  <Line type="monotone" dataKey="complaints" stroke="#14b8a6" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-                  <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="card p-8 min-h-[350px] flex flex-col">
+              <DashboardChart data={data.weekly_trend} />
             </div>
           </div>
 
@@ -148,9 +184,18 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="flex-1">
                   <div className="text-xs font-bold text-primary-400 uppercase tracking-widest mb-3">Yapay Zeka Brifingi</div>
-                  <p className="text-sm text-surface-300 leading-relaxed font-medium italic">
-                    "{data.ai_summary || "Gemini analizi hazır. Şikayetlerinizdeki trendler ve çözüm önerileri burada yer alacak."}"
-                  </p>
+                  {aiBriefing ? (
+                    <p className="text-sm text-surface-300 leading-relaxed font-medium italic">
+                      "{aiBriefing}"
+                    </p>
+                  ) : (
+                    <div className="space-y-2 animate-pulse mt-2">
+                      <div className="h-4 bg-surface-800 rounded w-full"></div>
+                      <div className="h-4 bg-surface-800 rounded w-5/6"></div>
+                      <div className="h-4 bg-surface-800 rounded w-4/6"></div>
+                      <div className="text-xs text-surface-500 mt-2 font-medium">Yapay zeka verileri sentezliyor...</div>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 mt-5 pt-5 border-t border-surface-800">
                     <div className="w-8 h-8 rounded-full bg-surface-800 flex items-center justify-center">
                       <TrendingUp className="w-4 h-4 text-primary-400" />
@@ -164,39 +209,87 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Sağ kolon: Durum dağılımı */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50 px-2">Durum Dağılımı</h3>
-          <div className="card p-6 space-y-3">
-            {data.by_status.map(({ status, count, percentage }) => (
-              <div key={status}>
-                <div className="flex items-center justify-between text-sm mb-1.5">
-                  <span className="font-semibold text-surface-700 dark:text-surface-300 truncate pr-2">{status}</span>
-                  <span className="font-black text-surface-900 dark:text-white shrink-0">{count}</span>
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50 px-2">Durum Dağılımı</h3>
+            <div className="card p-6 space-y-3">
+              {data.by_status.map(({ status, count, percentage }) => (
+                <div key={status}>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="font-semibold text-surface-700 dark:text-surface-300 truncate pr-2">{status}</span>
+                    <span className="font-black text-surface-900 dark:text-white shrink-0">{count}</span>
+                  </div>
+                  <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${percentage}%`, background: 'linear-gradient(90deg,#14b8a6,#10b981)' }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${percentage}%`, background: 'linear-gradient(90deg,#14b8a6,#10b981)' }}
-                  />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50 px-2 pt-4">Kategori Dağılımı</h3>
-          <div className="card p-6 space-y-2">
-            {data.by_category.slice(0, 6).map(({ category, count }) => (
-              <div key={category} className="flex items-center justify-between py-1">
-                <span className="text-sm font-medium text-surface-600 dark:text-surface-400 truncate pr-2">{category}</span>
-                <span className="text-sm font-black text-surface-900 dark:text-white shrink-0"
-                  style={{ color: count > 3 ? '#ef4444' : count > 1 ? '#f59e0b' : '#10b981' }}>{count}</span>
-              </div>
-            ))}
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50 px-2">Kategori Dağılımı</h3>
+            <div className="card p-6 space-y-2">
+              {/* Değiştireceğin Alan Başlangıcı */}
+              {data.by_category.slice(0, 6).map(({ category, count }) => {
+                // Baştaki "ComplaintCategory." kısmını siler
+                let cleanCategory = category.replace('ComplaintCategory.', '');
+
+                // Sondaki yapışık sayıyı (örn: 3) temizler
+                if (cleanCategory.endsWith(count.toString())) {
+                  cleanCategory = cleanCategory.slice(0, -count.toString().length);
+                }
+
+                // Baş harfi büyük, kalanı küçük yapar (ELECTRICITY -> Electricity)
+                const formattedCategory = cleanCategory.charAt(0).toUpperCase() + cleanCategory.slice(1).toLowerCase();
+
+                return (
+                  <div key={category} className="flex items-center justify-between py-1">
+                    <span className="text-sm font-medium text-surface-600 dark:text-surface-400 truncate pr-2">
+                      {formattedCategory}
+                    </span>
+                    <span
+                      className="text-sm font-black text-surface-900 dark:text-white shrink-0"
+                      style={{ color: count > 3 ? '#ef4444' : count > 1 ? '#f59e0b' : '#10b981' }}
+                    >
+                      {count}
+                    </span>
+                  </div>
+                );
+              })}
+              {/* Değiştireceğin Alan Bitişi */}
+            </div>
           </div>
         </div>
       </div>
 
-
+      {/* Urgent Tasks */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-2">
+          <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50">Öncelikli Aksiyonlar</h3>
+          <Link href="/admin/complaints" className="text-sm font-bold text-primary-500 hover:text-primary-600 transition-colors">Tümünü Gör →</Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {data.recent_urgent.slice(0, 4).map((c) => (
+            <Link key={c.id} href={`/admin/complaints/${c.id}`} className="card p-6 flex items-center gap-6 hover:border-primary-500/50 transition-all group">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <Zap className="w-6 h-6 text-red-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-black uppercase tracking-tighter text-red-500 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded">ACİL</span>
+                  <span className="text-xs text-surface-400">{new Date(c.created_at).toLocaleDateString('tr-TR')}</span>
+                </div>
+                <p className="text-sm font-bold text-surface-900 dark:text-surface-50 truncate">{c.description}</p>
+              </div>
+              <StatusBadge status={c.status as any} />
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

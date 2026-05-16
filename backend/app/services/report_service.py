@@ -29,6 +29,19 @@ class ReportService:
             )
             from reportlab.pdfbase import pdfmetrics
             from reportlab.pdfbase.ttfonts import TTFont
+            import os
+
+            # Türkçe karakter desteği ve resmi görünüm için Arial TTF yükle
+            font_name = "Helvetica"
+            font_bold = "Helvetica-Bold"
+            arial_path = "C:/Windows/Fonts/arial.ttf"
+            arial_bold_path = "C:/Windows/Fonts/arialbd.ttf"
+            
+            if os.path.exists(arial_path) and os.path.exists(arial_bold_path):
+                pdfmetrics.registerFont(TTFont('Arial', arial_path))
+                pdfmetrics.registerFont(TTFont('Arial-Bold', arial_bold_path))
+                font_name = "Arial"
+                font_bold = "Arial-Bold"
 
             buffer = io.BytesIO()
             doc = SimpleDocTemplate(
@@ -41,6 +54,14 @@ class ReportService:
             )
 
             styles = getSampleStyleSheet()
+            # Stillerin fontunu değiştir (Türkçe desteği)
+            for style in styles.byName.values():
+                if hasattr(style, 'fontName'):
+                    if style.fontName == 'Helvetica':
+                        style.fontName = font_name
+                    elif style.fontName == 'Helvetica-Bold':
+                        style.fontName = font_bold
+                    
             story = []
 
             # Başlık
@@ -78,7 +99,8 @@ class ReportService:
             table.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e40af")),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 0), (-1, 0), font_bold),
+                ("FONTNAME", (0, 1), (-1, -1), font_name),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f9ff")]),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
                 ("FONTSIZE", (0, 0), (-1, -1), 11),
@@ -109,7 +131,8 @@ class ReportService:
                 comp_table.setStyle(TableStyle([
                     ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#374151")),
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTNAME", (0, 0), (-1, 0), font_bold),
+                    ("FONTNAME", (0, 1), (-1, -1), font_name),
                     ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
                     ("FONTSIZE", (0, 0), (-1, -1), 9),

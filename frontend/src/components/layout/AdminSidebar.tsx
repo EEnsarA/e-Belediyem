@@ -40,8 +40,7 @@ export default function AdminSidebar({ open, onToggle }: Props) {
   };
 
   /* İkonlar her zaman px-[14px]'de sabit — oynamaz */
-  const row = `flex items-center gap-4 rounded-xl px-[14px] py-[11px] w-full
-               transition-all duration-200 overflow-hidden`;
+  const row = `flex items-center gap-4 rounded-xl px-[14px] py-[11px] w-full transition-all duration-200 overflow-hidden`;
   const ico = `shrink-0 w-5 h-5`;
 
   return (
@@ -71,7 +70,7 @@ export default function AdminSidebar({ open, onToggle }: Props) {
             <Building2 className="w-3.5 h-3.5 text-emerald-400" />
           </div>
           {open && (
-            <span className="text-[15px] font-black tracking-tight whitespace-nowrap">
+            <span className="text-[18px] font-black tracking-tight whitespace-nowrap">
               e-<span className="text-emerald-400">Belediyem</span>
             </span>
           )}
@@ -129,7 +128,7 @@ export default function AdminSidebar({ open, onToggle }: Props) {
         </button>
 
         {/* Kullanıcı */}
-        <div className={`${row} bg-white/[0.05] border border-white/[0.07]`}>
+        <div className={`flex items-center gap-4 rounded-xl py-[11px] w-full transition-all duration-200 overflow-hidden bg-white/[0.05] border border-white/[0.07] ${open ? 'px-[14px]' : 'px-0 justify-center'}`}>
           <div className="w-8 h-8 rounded-full bg-emerald-500/25 border border-emerald-400/30
                           flex items-center justify-center text-emerald-300 font-black text-[12px] shrink-0">
             {user?.full_name?.charAt(0) ?? 'A'}
