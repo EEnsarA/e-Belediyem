@@ -6,6 +6,9 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+from fastapi.staticfiles import StaticFiles
+import os
+
 from app.core.config import settings
 from app.core.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
 from app.api.v1 import auth, complaints, polls, conversations, announcements, admin, discover
@@ -65,6 +68,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static files
+os.makedirs("static/uploads", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Routers
 app.include_router(auth.router, prefix="/api")

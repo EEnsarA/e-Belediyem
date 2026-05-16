@@ -157,7 +157,7 @@ async def create_complaint(
         {"id": complaint.id, "status": complaint.status.value},
     )
 
-    await db.refresh(complaint)
+    await db.refresh(complaint, ["timeline"])
     return await _to_response(complaint, db, current_user.id)
 
 
@@ -243,7 +243,7 @@ async def update_complaint_status(
             update.status.value,
         )
 
-    await db.refresh(complaint)
+    await db.refresh(complaint, ["timeline"])
     return await _to_response(complaint, db, current_user.id)
 
 

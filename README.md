@@ -23,14 +23,46 @@ cp .env.example .env
 # .env dosyasını düzenle (özellikle GEMINI_API_KEY)
 ```
 
-### 2. Docker Compose ile başlat
+### 2. Kurulum Seçenekleri
+
+#### Seçenek A: Yerel Kurulum (Docker Olmadan) - **Önerilen**
+1. **Veritabanı:** PostgreSQL üzerinde `akilli_belediye` isimli bir veritabanı oluşturun.
+   ```bash
+   # psql ile (şifre soracaktır):
+   psql -U postgres -c "CREATE DATABASE akilli_belediye;"
+   
+   # VEYA createdb komutu ile:
+   createdb -U postgres akilli_belediye
+   ```
+2. **Backend:**
+   ```bash
+   cd backend
+   python -m venv .venv
+   .venv\Scripts\activate  # Linux/Mac: source .venv/bin/activate
+   pip install -r requirements.txt
+   uvicorn app.main:app --reload
+   ```
+3. **Frontend:**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+#### Seçenek B: Docker ile Kurulum
 ```bash
 docker-compose up -d
 ```
 
-### 3. Veritabanını hazırla ve seed data ekle
+### 3. Veritabanını Hazırla ve Örnek Veri Ekle
+**Yerel kurulum için:**
 ```bash
-docker exec akilli_belediye_backend python -m app.db.seed
+cd backend
+python -m scripts.seed_data
+```
+**Docker için:**
+```bash
+docker exec akilli_belediye_backend python -m scripts.seed_data
 ```
 
 ### 4. Uygulamaya eriş
