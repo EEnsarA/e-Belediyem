@@ -21,6 +21,7 @@ const adminNav = [
   { href: '/admin/announcements', icon: Megaphone, label: 'Duyurular' },
   { href: '/admin/chat', icon: MessageSquare, label: 'Canlı Destek' },
   { href: '/admin/reports', icon: FileText, label: 'Raporlama' },
+  { href: '/admin/settings', icon: Building2, label: 'Belediye Ayarları' },
   { href: '/admin/logs', icon: Shield, label: 'Audit Log' },
   { href: '/admin/users', icon: Users, label: 'Kullanıcılar' },
 ]
@@ -59,9 +60,16 @@ export default function AdminSidebar() {
         </div>
 
         {/* Municipality Info */}
-        <div className="mx-6 p-4 rounded-3xl bg-white/10 backdrop-blur-md border border-white/10">
-          <div className="text-[10px] font-black text-blue-300 uppercase tracking-widest mb-1">BELEDİYE</div>
-          <div className="text-xs font-bold text-white truncate">{user?.municipality_name}</div>
+        <div className="mx-6 p-4 rounded-3xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center gap-3">
+          {user?.municipality_logo_url && (
+            <div className="w-8 h-8 rounded-lg bg-white/10 p-1 shrink-0 border border-white/10">
+              <img src={user.municipality_logo_url} alt="Logo" className="w-full h-full object-contain" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-black text-blue-300 uppercase tracking-widest mb-0.5">BELEDİYE</div>
+            <div className="text-xs font-bold text-white truncate">{user?.municipality_name}</div>
+          </div>
         </div>
 
         {/* Navigation */}

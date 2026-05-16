@@ -52,7 +52,7 @@ class ReportService:
                 spaceAfter=12,
             )
             story.append(Paragraph(f"{municipality_name}", title_style))
-            story.append(Paragraph("Şikayet Analiz Raporu", styles["Heading2"]))
+            story.append(Paragraph("Belediye Analiz ve Durum Raporu", styles["Heading2"]))
 
             date_range = ""
             if start_date and end_date:

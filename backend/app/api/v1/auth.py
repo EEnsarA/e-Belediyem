@@ -46,6 +46,7 @@ async def get_me(
     db: AsyncSession = Depends(get_db),
 ):
     municipality_name = None
+    municipality_logo_url = None
     if current_user.municipality_id:
         result = await db.execute(
             select(Municipality).where(Municipality.id == current_user.municipality_id)
@@ -53,6 +54,7 @@ async def get_me(
         municipality = result.scalar_one_or_none()
         if municipality:
             municipality_name = municipality.name
+            municipality_logo_url = municipality.logo_url
 
     return UserMeResponse(
         id=current_user.id,
@@ -61,6 +63,7 @@ async def get_me(
         is_admin=current_user.is_admin,
         municipality_id=current_user.municipality_id,
         municipality_name=municipality_name,
+        municipality_logo_url=municipality_logo_url,
         push_enabled=current_user.push_enabled,
         email_enabled=current_user.email_enabled,
     )

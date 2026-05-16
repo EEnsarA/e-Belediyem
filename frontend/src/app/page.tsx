@@ -43,6 +43,7 @@ interface LeaderboardEntry {
   active_polls: number
   total_complaints: number
   rank: number
+  logo_url?: string
   badge?: string
   achievement?: string
 }
@@ -58,6 +59,7 @@ interface PublicComplaint {
   created_at?: string
   user_upvoted?: boolean
   municipality_id?: number
+  logo_url?: string
 }
 
 interface GlobalPoll {
@@ -69,6 +71,7 @@ interface GlobalPoll {
   total_votes: number
   ends_at?: string
   created_at?: string
+  logo_url?: string
 }
 
 export default function RootDiscoverPage() {
@@ -288,8 +291,12 @@ export default function RootDiscoverPage() {
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center border border-surface-200 dark:border-surface-700">
-                            <Building2 className="w-4 h-4 text-surface-500" />
+                          <div className="w-10 h-10 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center border border-surface-200 dark:border-surface-700 overflow-hidden shadow-inner">
+                            {c.logo_url ? (
+                              <img src={c.logo_url} alt="Logo" className="w-full h-full object-contain p-1.5" />
+                            ) : (
+                              <Building2 className="w-5 h-5 text-surface-500" />
+                            )}
                           </div>
                           <div>
                             <div className="text-sm font-bold text-surface-900 dark:text-surface-50">{c.municipality_name}</div>
@@ -375,8 +382,12 @@ export default function RootDiscoverPage() {
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500 to-violet-600 flex items-center justify-center text-white shadow-md">
-                            <BarChart3 className="w-5 h-5" />
+                          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-surface-800 flex items-center justify-center shadow-md overflow-hidden border border-surface-100 dark:border-surface-700">
+                            {p.logo_url ? (
+                               <img src={p.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
+                            ) : (
+                               <BarChart3 className="w-6 h-6 text-primary-500" />
+                            )}
                           </div>
                           <div>
                             <div className="text-xs text-primary-600 dark:text-primary-400 font-bold uppercase tracking-wider mb-0.5">{p.municipality_name}</div>
@@ -448,9 +459,19 @@ export default function RootDiscoverPage() {
                         }`}
                       >
                         <div className="absolute -top-4 -right-4 text-8xl opacity-10 font-black p-2">{entry.badge}</div>
-                        <div className="text-5xl mb-3 drop-shadow-md">{entry.badge}</div>
-                        <div className="text-xl font-black truncate drop-shadow-sm">{entry.name}</div>
-                        <div className="text-white/80 text-sm mb-6 font-medium">{entry.province}</div>
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="w-16 h-16 rounded-3xl bg-white/20 backdrop-blur-md p-3 shadow-inner border border-white/20">
+                            {entry.logo_url ? (
+                              <img src={entry.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                            ) : (
+                              <div className="text-3xl">{entry.badge}</div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xl font-black truncate drop-shadow-sm">{entry.name}</div>
+                            <div className="text-white/80 text-sm font-medium">{entry.province}</div>
+                          </div>
+                        </div>
                         
                         <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20">
                           <div className="text-4xl font-black">{entry.score}</div>
@@ -495,8 +516,12 @@ export default function RootDiscoverPage() {
                         transition={{ delay: i * 0.05 }}
                         className="flex items-center gap-4 p-5 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors"
                       >
-                        <div className="w-12 h-12 bg-surface-100 dark:bg-surface-800 rounded-2xl flex items-center justify-center font-black text-surface-600 dark:text-surface-300 shadow-inner">
-                          {entry.rank}
+                        <div className="w-12 h-12 bg-surface-100 dark:bg-surface-800 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden border border-surface-200 dark:border-surface-700">
+                           {entry.logo_url ? (
+                             <img src={entry.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
+                           ) : (
+                             <span className="font-black text-surface-400">{entry.rank}</span>
+                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-surface-900 dark:text-surface-50 truncate text-base">{entry.name}</div>

@@ -35,6 +35,7 @@ class UserMeResponse(BaseModel):
     is_admin: bool
     municipality_id: Optional[int]
     municipality_name: Optional[str]
+    municipality_logo_url: Optional[str] = None
     push_enabled: bool
     email_enabled: bool
 

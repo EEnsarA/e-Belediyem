@@ -67,6 +67,7 @@ class ComplaintGroupResponse(BaseModel):
 
 class ReportRequest(BaseModel):
     format: str  # pdf or docx
+    report_type: str = "general"  # general, performance, satisfaction, urgent
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     include_ai_summary: bool = True

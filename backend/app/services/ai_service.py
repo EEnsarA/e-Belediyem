@@ -124,7 +124,7 @@ Kişisel bilgilere değinme.
             logger.warning(f"Embedding oluşturulamadı: {e}")
             return None
 
-    async def generate_chat_response(self, topic: str, message: str, history: List[Dict]) -> str:
+    async def generate_chat_response(self, topic: str, message: str, history: List[Dict], knowledge_context: Optional[str] = None) -> str:
         """AI chat yanıtı - Belediye danışma chatbot."""
         if not self.enabled:
             return "Şu anda AI asistan hizmet dışı. Yetkililerimiz en kısa sürede size yardımcı olacak."
@@ -133,16 +133,25 @@ Kişisel bilgilere değinme.
             history_text = "\n".join([
                 f"{h['sender']}: {h['content']}" for h in history[-5:]  # Son 5 mesaj
             ])
+            
+            knowledge_prompt = ""
+            if knowledge_context:
+                knowledge_prompt = f"\nBELEDİYE BİLGİ MERKEZİ VERİLERİ:\n{knowledge_context}\n"
+
             prompt = f"""
 Sen bir belediye dijital asistanısın. Vatandaşların sorularını kibarca, doğru ve özlü şekilde yanıtlıyorsun.
+{knowledge_prompt}
 Konu: {topic}
 Konuşma geçmişi:
 {history_text}
 
 Vatandaş: {message}
 
-KURALLARA: Kişisel veri isteme. Belediye hizmetleri hakkında genel bilgi ver.
-Yanıtı kısa tut (max 200 kelime). Türkçe yanıt ver.
+KURALLARA: 
+1. Eğer yukarıdaki 'BELEDİYE BİLGİ MERKEZİ VERİLERİ' kısmında aranan cevap varsa oradaki bilgiyi önceliklendir.
+2. Kişisel veri isteme. 
+3. Belediye hizmetleri hakkında genel bilgi ver.
+4. Yanıtı kısa tut (max 200 kelime). Türkçe yanıt ver.
 
 Asistan:"""
             response = self._text_model.generate_content(prompt)

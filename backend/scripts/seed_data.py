@@ -14,6 +14,7 @@ from app.models.poll import Poll, Vote
 from app.models.announcement import Announcement, AuditLog
 from app.models.complaint import Complaint, ComplaintStatus, ComplaintCategory, ComplaintUpvote, ComplaintTimeline, ComplaintGroup
 from app.models.conversation import Conversation, Message
+from app.models.knowledge import KnowledgeBase
 from app.core.security import hash_tckn
 from sqlalchemy import select, delete
 
@@ -30,6 +31,7 @@ async def seed():
         await db.execute(delete(Poll))
         await db.execute(delete(Announcement))
         await db.execute(delete(ComplaintGroup))
+        await db.execute(delete(KnowledgeBase))
         await db.execute(delete(User))
         await db.execute(delete(Municipality))
         await db.commit()
@@ -42,7 +44,7 @@ async def seed():
                 "name": "Erzurum Büyükşehir Belediyesi",
                 "province": "Erzurum",
                 "district": "Yakutiye",
-                "logo_url": "https://www.erzurum.bel.tr/images/logo.png",
+                "logo_url": "/logos/erzurum.png",
                 "mayor_name": "Mehmet Sekmen",
                 "population": 767848,
                 "users": [
@@ -70,7 +72,7 @@ async def seed():
                 "name": "Kadıköy Belediyesi",
                 "province": "İstanbul",
                 "district": "Kadiköy",
-                "logo_url": "https://www.kadikoy.bel.tr/Content/images/logo.png",
+                "logo_url": "/logos/kadikoy.png",
                 "mayor_name": "Mesut Kösedağı",
                 "population": 481983,
                 "users": [
@@ -92,7 +94,7 @@ async def seed():
                 "name": "Çankaya Belediyesi",
                 "province": "Ankara",
                 "district": "Cankaya",
-                "logo_url": "https://www.cankaya.bel.tr/img/logo.png",
+                "logo_url": "/logos/cankaya.jpg",
                 "mayor_name": "Hüseyin Can Güner",
                 "population": 944609,
                 "users": [
@@ -113,7 +115,7 @@ async def seed():
                 "name": "Konak Belediyesi",
                 "province": "İzmir",
                 "district": "Konak",
-                "logo_url": "https://www.konak.bel.tr/img/logo.png",
+                "logo_url": "/logos/konak.png",
                 "mayor_name": "Nilüfer Çınarlı Mutlu",
                 "population": 332277,
                 "users": [
@@ -162,8 +164,7 @@ async def seed():
 
             # Add Complaints
             for desc, status, cat, sat, upvotes in config["complaints"]:
-                # Her şikayeti farklı bir kullanıcıya ata
-                u_idx = (len(desc) % (len(created_users) - 1)) + 1 # admin olmayan kullanıcılar
+                u_idx = (len(desc) % (len(created_users) - 1)) + 1
                 db.add(Complaint(
                     user_id=created_users[u_idx].id,
                     municipality_id=muni.id,
@@ -190,11 +191,11 @@ async def seed():
                 ))
 
             # Add Announcements
-            announcements = [
+            ann_data = [
                 ("Kültür Sanat Etkinlikleri", "Bu hafta sonu tüm halkımız davetlidir."),
                 ("Yol Bakım Çalışması", "Ana caddelerde planlı bakım yapılacaktır."),
             ]
-            for title, content in announcements:
+            for title, content in ann_data:
                 db.add(Announcement(
                     municipality_id=muni.id,
                     title=title,
@@ -202,8 +203,24 @@ async def seed():
                     created_by_id=admin_user.id
                 ))
 
+            # Add Knowledge Base Entries (FAQs) for Erzurum
+            if config["district"] == "Yakutiye":
+                faqs = [
+                    ("Ehliyet", "Ehliyet nasıl alınır?", "Erzurum'da ehliyet başvuruları Nüfus ve Vatandaşlık İşleri Genel Müdürlüğü üzerinden randevu ile alınmaktadır. Gerekli belgeler: Sertifika, sağlık raporu ve biyometrik fotoğraf."),
+                    ("Vergi", "Emlak vergisi ne zaman ödenir?", "Erzurum Büyükşehir Belediyesi'nde emlak vergisi 1. taksitleri Mayıs, 2. taksitleri ise Kasım ayı sonuna kadar ödenmelidir."),
+                    ("Su", "Su faturamı nereden ödeyebilirim?", "ESKİ (Erzurum Su ve Kanalizasyon İdaresi) veznelerinden, https://online.eski.gov.tr adresinden veya anlaşmalı bankalardan ödeme yapabilirsiniz."),
+                    ("Ulaşım", "Kardelen Kart nasıl yüklenir?", "Erzurum'daki Kardelen Kart yükleme noktalarından, bayilerden veya mobil uygulama üzerinden bakiye yüklemesi yapabilirsiniz.")
+                ]
+                for cat, q, a in faqs:
+                    db.add(KnowledgeBase(
+                        municipality_id=muni.id,
+                        category=cat,
+                        question=q,
+                        answer=a
+                    ))
+
         await db.commit()
-        print("Successfully seeded 4 municipalities with users, complaints, and polls!")
+        print("Successfully seeded 4 municipalities with users, complaints, polls and knowledge base!")
 
 if __name__ == "__main__":
     asyncio.run(seed())

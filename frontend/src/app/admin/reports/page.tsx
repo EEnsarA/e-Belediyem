@@ -2,21 +2,30 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download, FileText, FileDown, Loader2, Calendar, ShieldCheck, PieChart, Info } from 'lucide-react'
+import { Download, FileText, FileDown, Loader2, Calendar, ShieldCheck, PieChart, Info, Zap } from 'lucide-react'
 import api from '@/lib/api/client'
 import { PageHeader } from '@/components/ui'
 import toast from 'react-hot-toast'
 
 export default function AdminReportsPage() {
   const [format, setFormat] = useState<'pdf' | 'docx'>('pdf')
+  const [reportType, setReportType] = useState<string>('general')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const generateReport = async () => {
+  const reportTypes = [
+    { id: 'general', label: 'Genel Durum Raporu', icon: PieChart, color: 'text-blue-500', desc: 'Tüm metrikleri içeren kapsamlı özet' },
+    { id: 'performance', label: 'Operasyonel Performans', icon: Zap, color: 'text-amber-500', desc: 'Çözüm hızları ve birim verimliliği' },
+    { id: 'satisfaction', label: 'Vatandaş Memnuniyeti', icon: ShieldCheck, color: 'text-emerald-500', desc: 'NPS ve duygu analizi odaklı' },
+    { id: 'urgent', label: 'Kritik & Acil Sorunlar', icon: Info, color: 'text-red-500', desc: 'Yüksek öncelikli bekleyen işler' },
+  ]
+
+  const generateReport = async (overrideType?: string | any) => {
     setLoading(true)
+    const type = (typeof overrideType === 'string') ? overrideType : reportType
     try {
-      const blob = await api.generateReport(format, startDate || undefined, endDate || undefined)
+      const blob = await api.generateReport(format, startDate || undefined, endDate || undefined, type)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -24,7 +33,8 @@ export default function AdminReportsPage() {
       a.click()
       URL.revokeObjectURL(url)
       toast.success('Rapor başarıyla oluşturuldu ve indirildi!')
-    } catch {
+    } catch (err) {
+      console.error('Rapor hatası:', err)
       toast.error('Rapor oluşturulurken teknik bir hata oluştu')
     } finally {
       setLoading(false)
@@ -83,6 +93,32 @@ export default function AdminReportsPage() {
                 </div>
               </div>
 
+              {/* Report Type Selection */}
+              <div>
+                <label className="block text-xs font-black text-surface-400 uppercase tracking-widest mb-4">Rapor Tipi / Şablonu</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {reportTypes.map((type) => (
+                    <button 
+                      key={type.id} 
+                      onClick={() => setReportType(type.id)}
+                      className={`flex items-start gap-4 p-5 rounded-2xl border-2 transition-all text-left group ${
+                        reportType === type.id
+                          ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/10'
+                          : 'border-surface-100 dark:border-surface-800 hover:border-surface-200'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl bg-white dark:bg-surface-800 border border-surface-100 dark:border-surface-700 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+                        <type.icon className={`w-5 h-5 ${type.color}`} />
+                      </div>
+                      <div>
+                        <div className="text-sm font-black text-surface-900 dark:text-surface-50">{type.label}</div>
+                        <div className="text-[10px] font-medium text-surface-400 mt-0.5">{type.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Date Range */}
               <div>
                 <label className="block text-xs font-black text-surface-400 uppercase tracking-widest mb-4">
@@ -108,7 +144,7 @@ export default function AdminReportsPage() {
 
               <div className="pt-4">
                 <button 
-                  onClick={generateReport} 
+                  onClick={() => generateReport()} 
                   disabled={loading} 
                   className="btn-primary w-full py-5 rounded-2xl shadow-lg shadow-primary-500/25 flex items-center justify-center gap-3 text-base"
                 >

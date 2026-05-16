@@ -3,11 +3,14 @@
 import { motion } from 'framer-motion'
 import {
   Trophy, ThumbsUp, BarChart3, Building2, Globe, Home, LogIn, UserPlus, ArrowRight,
-  Sun, Moon, Menu, X
+  Sun, Moon, Menu, X, LogOut
 } from 'lucide-react'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
 import { useState } from 'react'
+import { useAuthStore } from '@/store'
+import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 
 interface DiscoverNavbarProps {
   activeTab: 'leaderboard' | 'global' | 'polls' | 'all'
@@ -19,6 +22,14 @@ interface DiscoverNavbarProps {
 export default function DiscoverNavbar({ activeTab, setActiveTab, isAuthenticated, user }: DiscoverNavbarProps) {
   const { theme, setTheme } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
+  const { logout } = useAuthStore()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await logout()
+    toast.success('Çıkış yapıldı')
+    router.push('/')
+  }
 
   const navItems = [
     { key: 'leaderboard', label: 'Liderlik', icon: Trophy, color: 'text-amber-400' },
@@ -77,8 +88,17 @@ export default function DiscoverNavbar({ activeTab, setActiveTab, isAuthenticate
                 >
                   PANELİM
                 </Link>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-black text-xs border border-white/20">
-                  {user?.full_name?.charAt(0) || 'U'}
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-black text-xs border border-white/20">
+                    {user?.full_name?.charAt(0) || 'U'}
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all border border-red-500/10"
+                    title="Çıkış Yap"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ) : (
@@ -129,9 +149,18 @@ export default function DiscoverNavbar({ activeTab, setActiveTab, isAuthenticate
           ))}
           <div className="pt-4 mt-4 border-t border-white/10">
             {isAuthenticated ? (
-              <Link href={user?.is_admin ? '/admin/dashboard' : '/dashboard'} className="btn-primary w-full py-3 text-center">
-                PANELİME GİT
-              </Link>
+              <div className="grid grid-cols-2 gap-2">
+                <Link href={user?.is_admin ? '/admin/dashboard' : '/dashboard'} className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-4 rounded-xl text-center text-xs transition-all">
+                  PANELİM
+                </Link>
+                <button 
+                  onClick={handleLogout}
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold py-3 px-4 rounded-xl text-center text-xs transition-all flex items-center justify-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  ÇIKIŞ YAP
+                </button>
+              </div>
             ) : (
               <Link href="/login" className="btn-primary w-full py-3 text-center">
                 HEMEN KATIL

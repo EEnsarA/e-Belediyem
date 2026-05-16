@@ -188,6 +188,7 @@ async def leaderboard(
             "recent_announcements": stats["recent_announcements"],
             "active_polls": stats["active_polls"],
             "total_complaints": stats["total_complaints"],
+            "logo_url": m.logo_url,
         })
 
     # Skora göre sırala
@@ -317,6 +318,7 @@ async def get_global_public_complaints(
             "municipality_id": c.municipality_id,
             "municipality_name": m_obj.name if m_obj else "Bilinmeyen Belediye",
             "province": m_obj.province if m_obj else "",
+            "logo_url": m_obj.logo_url if m_obj else None,
         })
 
     return {
@@ -352,6 +354,7 @@ async def get_global_polls(
             "total_votes": total_votes,
             "ends_at": poll.ends_at.isoformat() if poll.ends_at else None,
             "created_at": poll.created_at.isoformat() if poll.created_at else None,
+            "logo_url": muni.logo_url,
         })
         
     return {"items": items}

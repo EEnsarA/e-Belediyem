@@ -145,8 +145,24 @@ class ApiClient {
     return res.data
   }
 
+  async quickChat(content: string) {
+    const res = await this.client.post('/conversations/quick-chat', { content })
+    return res.data
+  }
+
   async takeoverConversation(convId: number) {
     const res = await this.client.patch(`/conversations/${convId}/takeover`)
+    return res.data
+  }
+
+  // Admin Settings
+  async getAdminSettings() {
+    const res = await this.client.get('/admin/settings')
+    return res.data
+  }
+
+  async updateAdminSettings(data: any) {
+    const res = await this.client.patch('/admin/settings', data)
     return res.data
   }
 
@@ -188,10 +204,16 @@ class ApiClient {
     return res.data
   }
 
-  async generateReport(format: 'pdf' | 'docx', startDate?: string, endDate?: string) {
+  async generateReport(format: 'pdf' | 'docx', startDate?: string, endDate?: string, reportType = 'general') {
     const res = await this.client.post(
       '/admin/report',
-      { format, start_date: startDate, end_date: endDate },
+      { 
+        format, 
+        start_date: startDate, 
+        end_date: endDate, 
+        report_type: reportType,
+        include_ai_summary: true 
+      },
       { responseType: 'blob' }
     )
     return res.data

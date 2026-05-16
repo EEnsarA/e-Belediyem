@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from app.core.dependencies import get_db, get_current_user
 from app.core.security import verify_access_token
 from app.models.conversation import Conversation, Message, ConversationStatus, MessageSenderType
+from app.models.knowledge import KnowledgeBase
 from app.models.user import User
 from app.schemas.poll import (
     ConversationCreate, MessageCreate, ConversationResponse, MessageResponse
@@ -14,6 +15,30 @@ from app.services.ai_service import ai_service
 from app.websocket.connection_manager import ws_manager
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
+
+
+@router.post("/quick-chat", summary="Hızlı AI Yanıtı")
+async def quick_chat(
+    data: MessageCreate,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Dashboard üzerindeki asistan için hızlı yanıt."""
+    # Bilgi bankasını al
+    k_result = await db.execute(
+        select(KnowledgeBase)
+        .where(KnowledgeBase.municipality_id == current_user.municipality_id, KnowledgeBase.is_active == True)
+    )
+    k_entries = k_result.scalars().all()
+    knowledge_context = "\n".join([f"Soru: {e.question}\nCevap: {e.answer}" for e in k_entries])
+
+    ai_response = await ai_service.generate_chat_response(
+        topic="Genel Destek",
+        message=data.content,
+        history=[],
+        knowledge_context=knowledge_context
+    )
+    return {"content": ai_response}
 
 
 @router.get("", response_model=List[ConversationResponse])
@@ -66,11 +91,17 @@ async def start_conversation(
     db.add(user_msg)
     await db.flush()
 
+    # Bilgi bankasını al
+    k_result = await db.execute(select(KnowledgeBase).where(KnowledgeBase.municipality_id == current_user.municipality_id, KnowledgeBase.is_active == True))
+    k_entries = k_result.scalars().all()
+    knowledge_context = "\n".join([f"Soru: {e.question}\nCevap: {e.answer}" for e in k_entries])
+
     # AI yanıtı
     ai_response = await ai_service.generate_chat_response(
         topic=data.topic or "Genel",
         message=data.first_message,
         history=[],
+        knowledge_context=knowledge_context
     )
     ai_msg = Message(
         conversation_id=conv.id,
@@ -122,10 +153,16 @@ async def send_message(
             for m in history_result.scalars().all()
         ]
 
+        # Bilgi bankasını al
+        k_result = await db.execute(select(KnowledgeBase).where(KnowledgeBase.municipality_id == conv.municipality_id, KnowledgeBase.is_active == True))
+        k_entries = k_result.scalars().all()
+        knowledge_context = "\n".join([f"Soru: {e.question}\nCevap: {e.answer}" for e in k_entries])
+
         ai_response = await ai_service.generate_chat_response(
             topic=conv.topic or "Genel",
             message=data.content,
             history=history,
+            knowledge_context=knowledge_context
         )
         ai_msg = Message(
             conversation_id=conv_id,

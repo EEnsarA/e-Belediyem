@@ -16,6 +16,9 @@ from app.schemas.dashboard import (
 )
 from app.services.ai_service import ai_service
 from app.services.report_service import report_service
+from app.models.municipality import Municipality
+from pydantic import BaseModel
+import urllib.parse
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -208,6 +211,20 @@ async def generate_report(
         page=1,
         page_size=100,
     )
+    muni_result = await db.execute(
+        sa_select(Municipality).where(Municipality.id == current_user.municipality_id)
+    )
+    municipality = muni_result.scalar_one_or_none()
+    muni_name = municipality.name if municipality else "Belediye"
+
+    # Rapor tipine göre filtreleme (items üzerinde)
+    if request.report_type == "performance":
+        items = [c for c in items if c.status == ComplaintStatus.RESOLVED]
+    elif request.report_type == "urgent":
+        items = [c for c in items if (c.ai_urgency_score or 0) >= 8]
+    elif request.report_type == "satisfaction":
+        items = [c for c in items if c.satisfaction_score is not None]
+
     complaints_data = [
         {
             "id": c.id,
@@ -219,48 +236,62 @@ async def generate_report(
         for c in items
     ]
 
-    # Municipality adı
-    from sqlalchemy import select as sa_select
-    from app.models.municipality import Municipality
-    muni_result = await db.execute(
-        sa_select(Municipality).where(Municipality.id == current_user.municipality_id)
-    )
-    municipality = muni_result.scalar_one_or_none()
-    muni_name = municipality.name if municipality else "Belediye"
-
     ai_summary = None
     if request.include_ai_summary:
+        prompt_type = {
+            "general": "genel belediye performansı ve şikayet trendleri",
+            "performance": "çözüm hızları ve operasyonel verimlilik",
+            "satisfaction": "vatandaş memnuniyeti ve NPS analizi",
+            "urgent": "kritik güvenlik ve altyapı sorunları"
+        }.get(request.report_type, "genel analiz")
+
         ai_summary = await ai_service.generate_weekly_briefing({
             "total": total,
             "resolved": stats["resolved"],
             "pending": stats["pending"],
             "avg_satisfaction": stats.get("avg_satisfaction"),
             "top_category": "Çeşitli",
+            "context": f"Bu bir {prompt_type} raporudur."
         })
 
     stats_dict = {**stats, "resolution_rate": resolution_rate}
-
-    if request.format == "pdf":
-        pdf_bytes = await report_service.generate_pdf_report(
-            muni_name, stats_dict, complaints_data, ai_summary,
-            request.start_date, request.end_date,
-        )
-        return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename=rapor_{muni_name}.pdf"},
-        )
-    elif request.format == "docx":
-        docx_bytes = await report_service.generate_word_report(
-            muni_name, stats_dict, complaints_data, ai_summary,
-        )
-        return Response(
-            content=docx_bytes,
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={"Content-Disposition": f"attachment; filename=rapor_{muni_name}.docx"},
-        )
-    else:
-        raise HTTPException(status_code=400, detail="format 'pdf' veya 'docx' olmalıdır")
+    try:
+        safe_muni_name = urllib.parse.quote(muni_name)
+        if request.format == "pdf":
+            pdf_bytes = await report_service.generate_pdf_report(
+                muni_name, stats_dict, complaints_data, ai_summary,
+                request.start_date, request.end_date,
+            )
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename=rapor.pdf; filename*=UTF-8''rapor_{safe_muni_name}.pdf"},
+            )
+        elif request.format == "docx":
+            docx_bytes = await report_service.generate_word_report(
+                muni_name, stats_dict, complaints_data, ai_summary,
+            )
+            return Response(
+                content=docx_bytes,
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers={"Content-Disposition": f"attachment; filename=rapor.docx; filename*=UTF-8''rapor_{safe_muni_name}.docx"},
+            )
+        else:
+            raise HTTPException(status_code=400, detail="format 'pdf' veya 'docx' olmalıdır")
+    except UnicodeEncodeError:
+        # Fallback to simple filename if encoding fails
+        if request.format == "pdf":
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": "attachment; filename=report.pdf"},
+            )
+        else:
+            return Response(
+                content=docx_bytes,
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers={"Content-Disposition": "attachment; filename=report.docx"},
+            )
 
 
 @router.get("/logs")
@@ -318,3 +349,48 @@ async def get_users(
         }
         for u in users
     ]
+
+
+class MunicipalityUpdate(BaseModel):
+    name: Optional[str] = None
+    logo_url: Optional[str] = None
+    mayor_name: Optional[str] = None
+
+
+@router.get("/settings")
+async def get_municipality_settings(
+    current_user=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Municipality).where(Municipality.id == current_user.municipality_id)
+    )
+    muni = result.scalar_one_or_none()
+    if not muni:
+        raise HTTPException(status_code=404, detail="Belediye bulunamadı")
+    return muni
+
+
+@router.patch("/settings")
+async def update_municipality_settings(
+    data: MunicipalityUpdate,
+    current_user=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Municipality).where(Municipality.id == current_user.municipality_id)
+    )
+    muni = result.scalar_one_or_none()
+    if not muni:
+        raise HTTPException(status_code=404, detail="Belediye bulunamadı")
+
+    if data.name is not None:
+        muni.name = data.name
+    if data.logo_url is not None:
+        muni.logo_url = data.logo_url
+    if data.mayor_name is not None:
+        muni.mayor_name = data.mayor_name
+
+    await db.commit()
+    await db.refresh(muni)
+    return muni

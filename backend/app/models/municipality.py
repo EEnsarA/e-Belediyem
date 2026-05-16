@@ -30,5 +30,6 @@ class Municipality(Base):
     complaints = relationship("Complaint", back_populates="municipality")
     polls = relationship("Poll", back_populates="municipality")
     announcements = relationship("Announcement", back_populates="municipality")
+    knowledge_entries = relationship("KnowledgeBase", back_populates="municipality")
     conversations = relationship("Conversation", back_populates="municipality")
     complaint_groups = relationship("ComplaintGroup", back_populates="municipality")

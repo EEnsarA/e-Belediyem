@@ -6,6 +6,7 @@ from app.models.complaint import Complaint, ComplaintTimeline, ComplaintGroup, C
 from app.models.poll import Poll, Vote
 from app.models.conversation import Conversation, Message
 from app.models.announcement import Announcement, AuditLog
+from app.models.knowledge import KnowledgeBase
 
 __all__ = [
     "Base",
