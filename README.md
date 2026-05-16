@@ -14,7 +14,8 @@
 ### Gereksinimler
 - Docker & Docker Compose
 - Node.js 20+ (local geliştirme için)
-- Python 3.12+ (local geliştirme için)
+- Python 3.12+ (local geliştirme içi
+,
 
 ### 1. Ortam değişkenlerini ayarla
 ```bash
