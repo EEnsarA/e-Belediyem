@@ -181,6 +181,19 @@ export interface ComplaintGroup {
   created_at: string
 }
 
+export interface EarlyWarningAlert {
+  title: string
+  location: string
+  risk_level: 'high' | 'medium' | 'low'
+  description: string
+  action_recommended: string
+}
+
+export interface EarlyWarningResponse {
+  alerts: EarlyWarningAlert[]
+  generated_at: string
+}
+
 // WebSocket Messages
 export type WSMessage =
   | { type: 'complaint_update'; complaint_id: number; status: string }

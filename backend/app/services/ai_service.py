@@ -202,6 +202,57 @@ Bu anket sonuçlarını kısaca analiz et, trend ve öneri sun (max 150 kelime, 
             logger.error(f"Anket analiz hatası: {e}")
             return "Anket analizi tamamlanamadı."
 
+    async def generate_early_warnings(self, complaints_data: List[Dict[str, Any]]) -> str:
+        """Son şikayetleri analiz edip proaktif erken uyarılar üretir."""
+        if not self.enabled or not complaints_data:
+            return "[]"
+
+        try:
+            # Şikayetleri JSON stringine çevir (prompta sığacak kadar daralt)
+            compact_data = json.dumps(complaints_data, ensure_ascii=False)
+            prompt = f"""
+Sen bir 'Akıllı Şehir Erken Uyarı Radarı' yapay zekasısın.
+Görev: Aşağıdaki son 7 günün şikayet verilerini analiz et ve coğrafi (mahalle/sokak/ilçe) veya kategorik anormallikleri (kümelenmeleri) tespit et.
+Örneğin: Aynı adresten veya yakın bölgelerden 3 tane su patlaması geldiyse, bu bir erken uyarıdır.
+
+Şikayet Verileri:
+{compact_data}
+
+Eğer bir kümelenme veya potansiyel kriz görüyorsan, SADECE ve KESİNLİKLE aşağıdaki formattaki bir JSON dizisi (Array) döndür. Başka hiçbir metin ekleme.
+Eğer ciddi bir risk yoksa boş dizi [] döndür.
+
+Örnek Çıktı Formatı:
+[
+  {{
+    "title": "Kritik Su Borusu Patlağı",
+    "location": "Kadıköy, Moda Mahallesi",
+    "risk_level": "high", 
+    "description": "Aynı bölgeden son 2 günde 4 farklı su sızıntısı ve tazyik düşüklüğü şikayeti geldi. Ana boru hattında sorun olabilir.",
+    "action_recommended": "İSKİ acil müdahale ekiplerinin Moda Caddesi'ne yönlendirilmesi."
+  }},
+  {{
+    "title": "Bölgesel Aydınlatma Arızası",
+    "location": "Beşiktaş, Abbasağa",
+    "risk_level": "medium",
+    "description": "Abbasağa parkı ve çevresinde sokak lambalarının yanmadığına dair şikayetler artış gösterdi.",
+    "action_recommended": "BEDAŞ ile iletişime geçilip trafo kontrolü istenmeli."
+  }}
+]
+
+Dikkat: `risk_level` sadece "high", "medium" veya "low" olabilir. SADECE JSON dizisi döndür.
+"""
+            response = self._text_model.generate_content(prompt)
+            text = response.text.strip()
+            # JSON temizle
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+            return text
+        except Exception as e:
+            logger.error(f"Erken Uyarı Radarı hatası: {e}")
+            return "[]"
+
     def _default_analysis(self) -> Dict[str, Any]:
         """AI devre dışıyken varsayılan değerler."""
         return {

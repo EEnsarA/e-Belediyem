@@ -98,48 +98,33 @@ class ComplaintRepository:
         result = await self.db.execute(
             select(Complaint).where(
                 Complaint.municipality_id == municipality_id,
-                Complaint.latitude.isnot(None),
-                Complaint.longitude.isnot(None),
                 Complaint.is_hidden == False,
             )
         )
         return list(result.scalars().all())
 
     async def get_stats(self, municipality_id: int, since: Optional[datetime] = None):
+        from sqlalchemy import case
         base = and_(Complaint.municipality_id == municipality_id, Complaint.is_hidden == False)
         if since:
             base = and_(base, Complaint.created_at >= since)
 
-        total = (await self.db.execute(select(func.count(Complaint.id)).where(base))).scalar_one()
-        resolved = (
-            await self.db.execute(
-                select(func.count(Complaint.id)).where(and_(base, Complaint.status == ComplaintStatus.RESOLVED))
-            )
-        ).scalar_one()
-        pending = (
-            await self.db.execute(
-                select(func.count(Complaint.id)).where(and_(base, Complaint.status == ComplaintStatus.PENDING))
-            )
-        ).scalar_one()
-        urgent = (
-            await self.db.execute(
-                select(func.count(Complaint.id)).where(and_(base, Complaint.ai_urgency_score >= 8))
-            )
-        ).scalar_one()
-        avg_satisfaction = (
-            await self.db.execute(
-                select(func.avg(Complaint.satisfaction_score)).where(
-                    and_(base, Complaint.satisfaction_score.isnot(None))
-                )
-            )
-        ).scalar_one()
+        query = select(
+            func.count(Complaint.id).label("total"),
+            func.sum(case((Complaint.status == ComplaintStatus.RESOLVED, 1), else_=0)).label("resolved"),
+            func.sum(case((Complaint.status == ComplaintStatus.PENDING, 1), else_=0)).label("pending"),
+            func.sum(case((Complaint.ai_urgency_score >= 8, 1), else_=0)).label("urgent"),
+            func.avg(Complaint.satisfaction_score).label("avg_satisfaction")
+        ).where(base)
+
+        result = (await self.db.execute(query)).fetchone()
 
         return {
-            "total": total,
-            "resolved": resolved,
-            "pending": pending,
-            "urgent": urgent,
-            "avg_satisfaction": float(avg_satisfaction) if avg_satisfaction else None,
+            "total": result.total or 0,
+            "resolved": result.resolved or 0,
+            "pending": result.pending or 0,
+            "urgent": result.urgent or 0,
+            "avg_satisfaction": float(result.avg_satisfaction) if result.avg_satisfaction else None,
         }
 
     async def get_by_category_counts(self, municipality_id: int) -> List[tuple]:

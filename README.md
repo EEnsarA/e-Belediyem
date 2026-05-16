@@ -29,10 +29,9 @@ cp .env.example .env
    ```bash
    # psql ile (şifre soracaktır):
    psql -U postgres -c "CREATE DATABASE akilli_belediye;"
-   
-   # VEYA createdb komutu ile:
-   createdb -U postgres akilli_belediye
+   psql -U postgres -d akilli_belediye -c "CREATE EXTENSION IF NOT EXISTS vector;"
    ```
+   > **Not:** `pgvector` eklentisi yerel PostgreSQL'inizde kurulu olmalıdır. Eğer kurulu değilse [buradaki yönergeleri](https://github.com/pgvector/pgvector#windows) izleyebilirsiniz.
 2. **Backend:**
    ```bash
    cd backend
