@@ -6,6 +6,7 @@ export interface User {
   is_admin: boolean
   municipality_id: number | null
   municipality_name: string | null
+  municipality_logo_url: string | null
   push_enabled: boolean
   email_enabled: boolean
 }
@@ -80,8 +81,8 @@ export interface ComplaintListResponse {
 
 export interface MapPoint {
   id: number
-  lat: number
-  lng: number
+  lat: number | null
+  lng: number | null
   status: ComplaintStatus
   category: ComplaintCategory | null
   urgency: number | null

@@ -98,12 +98,11 @@ class ComplaintRepository:
         result = await self.db.execute(
             select(Complaint).where(
                 Complaint.municipality_id == municipality_id,
-                Complaint.latitude.isnot(None),
-                Complaint.longitude.isnot(None),
                 Complaint.is_hidden == False,
             )
         )
         return list(result.scalars().all())
+
 
     async def get_stats(self, municipality_id: int, since: Optional[datetime] = None):
         base = and_(Complaint.municipality_id == municipality_id, Complaint.is_hidden == False)

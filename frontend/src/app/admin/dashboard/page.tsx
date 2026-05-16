@@ -109,84 +109,94 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Weekly Trend Chart */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50">Şikayet Eğilimi</h3>
-            <div className="flex items-center gap-4 text-xs font-medium text-surface-400">
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-primary-500" /> Şikayet</div>
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500" /> Çözülen</div>
+        {/* Sol kolon: Şikayet Eğilimi + Haftalık Özet */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Şikayet Eğilimi */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50">Şikayet Eğilimi</h3>
+              <div className="flex items-center gap-4 text-xs font-medium text-surface-400">
+                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-primary-500" /> Şikayet</div>
+                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500" /> Çözülen</div>
+              </div>
+            </div>
+            <div className="card p-8 min-h-[300px]">
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={data.weekly_trend}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Line type="monotone" dataKey="complaints" stroke="#14b8a6" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          <div className="card p-8 min-h-[350px]">
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={data.weekly_trend}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                />
-                <Line type="monotone" dataKey="complaints" stroke="#14b8a6" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-                <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
 
-        {/* AI Insight Sidebar */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50 px-2">Yapay Zeka Brifingi</h3>
-          <div className="card p-8 bg-surface-900 text-white border-none h-full min-h-[350px] relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary-500/30 transition-all" />
-            <div className="relative z-10 space-y-6">
-              <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center mb-6">
-                <Bot className="w-6 h-6 text-white" />
-              </div>
-              <div className="space-y-4">
-                <div className="text-xs font-bold text-primary-400 uppercase tracking-widest">Haftalık Özet</div>
-                <p className="text-sm text-surface-300 leading-relaxed font-medium italic">
-                  "{data.ai_summary || "Gemini analizi hazır. Şikayetlerinizdeki trendler ve çözüm önerileri burada yer alacak."}"
-                </p>
-              </div>
-              <div className="pt-6 border-t border-surface-800">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-surface-800 flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4 text-primary-400" />
+          {/* Haftalık Özet — şikayet eğiliminin altında, aynı hizada */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50 px-2">Haftalık Özet</h3>
+            <div className="card p-8 bg-surface-900 text-white border-none relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary-500/30 transition-all" />
+              <div className="relative z-10 flex items-start gap-5">
+                <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center shrink-0">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs font-bold text-primary-400 uppercase tracking-widest mb-3">Yapay Zeka Brifingi</div>
+                  <p className="text-sm text-surface-300 leading-relaxed font-medium italic">
+                    "{data.ai_summary || "Gemini analizi hazır. Şikayetlerinizdeki trendler ve çözüm önerileri burada yer alacak."}"
+                  </p>
+                  <div className="flex items-center gap-3 mt-5 pt-5 border-t border-surface-800">
+                    <div className="w-8 h-8 rounded-full bg-surface-800 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-primary-400" />
+                    </div>
+                    <div className="text-xs text-surface-400 font-medium">Bu hafta %15 daha hızlı aksiyon alındı.</div>
                   </div>
-                  <div className="text-xs text-surface-400 font-medium">Bu hafta %15 daha hızlı aksiyon alındı.</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Sağ kolon: Durum dağılımı */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50 px-2">Durum Dağılımı</h3>
+          <div className="card p-6 space-y-3">
+            {data.by_status.map(({ status, count, percentage }) => (
+              <div key={status}>
+                <div className="flex items-center justify-between text-sm mb-1.5">
+                  <span className="font-semibold text-surface-700 dark:text-surface-300 truncate pr-2">{status}</span>
+                  <span className="font-black text-surface-900 dark:text-white shrink-0">{count}</span>
+                </div>
+                <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${percentage}%`, background: 'linear-gradient(90deg,#14b8a6,#10b981)' }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50 px-2 pt-4">Kategori Dağılımı</h3>
+          <div className="card p-6 space-y-2">
+            {data.by_category.slice(0, 6).map(({ category, count }) => (
+              <div key={category} className="flex items-center justify-between py-1">
+                <span className="text-sm font-medium text-surface-600 dark:text-surface-400 truncate pr-2">{category}</span>
+                <span className="text-sm font-black text-surface-900 dark:text-white shrink-0"
+                  style={{ color: count > 3 ? '#ef4444' : count > 1 ? '#f59e0b' : '#10b981' }}>{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Urgent Tasks */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between px-2">
-          <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50">Öncelikli Aksiyonlar</h3>
-          <Link href="/admin/complaints" className="text-sm font-bold text-primary-500 hover:text-primary-600 transition-colors">Tümünü Gör →</Link>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data.recent_urgent.slice(0, 4).map((c) => (
-            <Link key={c.id} href={`/admin/complaints/${c.id}`} className="card p-6 flex items-center gap-6 hover:border-primary-500/50 transition-all group">
-              <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <Zap className="w-6 h-6 text-red-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-black uppercase tracking-tighter text-red-500 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded">ACİL</span>
-                  <span className="text-xs text-surface-400">{new Date(c.created_at).toLocaleDateString('tr-TR')}</span>
-                </div>
-                <p className="text-sm font-bold text-surface-900 dark:text-surface-50 truncate">{c.description}</p>
-              </div>
-              <StatusBadge status={c.status as any} />
-            </Link>
-          ))}
-        </div>
-      </div>
+
     </div>
   )
 }
