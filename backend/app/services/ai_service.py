@@ -202,79 +202,56 @@ Bu anket sonuçlarını kısaca analiz et, trend ve öneri sun (max 150 kelime, 
             logger.error(f"Anket analiz hatası: {e}")
             return "Anket analizi tamamlanamadı."
 
-    async def generate_form_questions(self, topic: str) -> List[Dict[str, Any]]:
-        """Verilen konuya göre yapay zeka ile anket/form soruları üretir."""
-        if not self.enabled:
-            return []
+    async def generate_early_warnings(self, complaints_data: List[Dict[str, Any]]) -> str:
+        """Son şikayetleri analiz edip proaktif erken uyarılar üretir."""
+        if not self.enabled or not complaints_data:
+            return "[]"
 
         try:
+            # Şikayetleri JSON stringine çevir (prompta sığacak kadar daralt)
+            compact_data = json.dumps(complaints_data, ensure_ascii=False)
             prompt = f"""
-            Sen bir belediye anket uzmanısın. "{topic}" konusu hakkında vatandaşlara sorulacak profesyonel bir anket tasarla.
-            
-            Lütfen aşağıdaki kurallara göre tam olarak 5 soru üret:
-            1. Sorular; 'short_text', 'paragraph', 'multiple_choice', 'checkbox', 'dropdown' tiplerinden karma olmalı.
-            2. Her soru için bir benzersiz 'id' (string) üret.
-            3. Seçenekli sorularda 'options' listesi ekle.
-            4. Yanıtı SADECE aşağıdaki JSON formatında ver, başka hiçbir metin ekleme (markdown code block kullanma, sadece ham JSON):
-            
-            [
-              {{
-                "id": "q1",
-                "type": "multiple_choice",
-                "title": "Soru metni?",
-                "required": true,
-                "options": ["A", "B", "C"]
-              }}
-            ]
-            """
+Sen bir 'Akıllı Şehir Erken Uyarı Radarı' yapay zekasısın.
+Görev: Aşağıdaki son 7 günün şikayet verilerini analiz et ve coğrafi (mahalle/sokak/ilçe) veya kategorik anormallikleri (kümelenmeleri) tespit et.
+Örneğin: Aynı adresten veya yakın bölgelerden 3 tane su patlaması geldiyse, bu bir erken uyarıdır.
+
+Şikayet Verileri:
+{compact_data}
+
+Eğer bir kümelenme veya potansiyel kriz görüyorsan, SADECE ve KESİNLİKLE aşağıdaki formattaki bir JSON dizisi (Array) döndür. Başka hiçbir metin ekleme.
+Eğer ciddi bir risk yoksa boş dizi [] döndür.
+
+Örnek Çıktı Formatı:
+[
+  {{
+    "title": "Kritik Su Borusu Patlağı",
+    "location": "Kadıköy, Moda Mahallesi",
+    "risk_level": "high", 
+    "description": "Aynı bölgeden son 2 günde 4 farklı su sızıntısı ve tazyik düşüklüğü şikayeti geldi. Ana boru hattında sorun olabilir.",
+    "action_recommended": "İSKİ acil müdahale ekiplerinin Moda Caddesi'ne yönlendirilmesi."
+  }},
+  {{
+    "title": "Bölgesel Aydınlatma Arızası",
+    "location": "Beşiktaş, Abbasağa",
+    "risk_level": "medium",
+    "description": "Abbasağa parkı ve çevresinde sokak lambalarının yanmadığına dair şikayetler artış gösterdi.",
+    "action_recommended": "BEDAŞ ile iletişime geçilip trafo kontrolü istenmeli."
+  }}
+]
+
+Dikkat: `risk_level` sadece "high", "medium" veya "low" olabilir. SADECE JSON dizisi döndür.
+"""
             response = self._text_model.generate_content(prompt)
             text = response.text.strip()
-            
+            # JSON temizle
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
             elif "```" in text:
                 text = text.split("```")[1].split("```")[0].strip()
-            
-            return json.loads(text)
+            return text
         except Exception as e:
-            logger.error(f"Soru üretme hatası: {e}")
-            # Kota aşımı veya hata durumunda fallback (yedek) sorular dön
-            return self._get_fallback_questions(topic)
-
-    def _get_fallback_questions(self, topic: str) -> List[Dict[str, Any]]:
-        """API kotası dolduğunda veya hata alındığında dönülecek örnek sorular."""
-        topic_lower = topic.lower()
-        
-        # Varsayılan sorular (Eğer konu eşleşmezse)
-        questions = [
-            {"id": "f1", "type": "short_text", "title": "Adınız ve Soyadınız", "required": True},
-            {"id": "f2", "type": "multiple_choice", "title": "Hizmetimizden ne kadar memnunsunuz?", "required": True, "options": ["Çok Memnunum", "Memnunum", "Kararsızım", "Memnun Değilim"]},
-            {"id": "f3", "type": "paragraph", "title": "Görüş ve önerileriniz nelerdir?", "required": False}
-        ]
-
-        if "ulaşım" in topic_lower or "otobüs" in topic_lower or "metro" in topic_lower:
-            questions = [
-                {"id": "u1", "type": "multiple_choice", "title": "En sık hangi toplu taşıma aracını kullanıyorsunuz?", "required": True, "options": ["Otobüs", "Metro", "Metrobüs", "Tramvay"]},
-                {"id": "u2", "type": "dropdown", "title": "Sefer sıklıklarından memnun musunuz?", "required": True, "options": ["Evet, yeterli", "Hayır, yetersiz", "Kısmen"]},
-                {"id": "u3", "type": "checkbox", "title": "İyileştirilmesini istediğiniz alanlar hangileri?", "required": False, "options": ["Araç temizliği", "Şoför nezaketi", "Dakiklik", "Durak konforu"]},
-                {"id": "u4", "type": "paragraph", "title": "Eklemek istediğiniz ulaşım sorunu var mı?", "required": False}
-            ]
-        elif "park" in topic_lower or "yeşil alan" in topic_lower or "bahçe" in topic_lower:
-            questions = [
-                {"id": "p1", "type": "multiple_choice", "title": "Mahallenizdeki parkları ne sıklıkla ziyaret ediyorsunuz?", "required": True, "options": ["Her gün", "Haftada birkaç kez", "Ayda bir", "Hiç"]},
-                {"id": "p2", "type": "checkbox", "title": "Parklarda hangi donatıların artırılmasını istersiniz?", "required": False, "options": ["Çocuk oyun alanı", "Spor aletleri", "Bank ve oturma yerleri", "Aydınlatma"]},
-                {"id": "p3", "type": "dropdown", "title": "Park temizliğinden memnun musunuz?", "required": True, "options": ["Çok Memnunum", "Memnunum", "Memnun Değilim"]},
-                {"id": "p4", "type": "paragraph", "title": "Yeni yapılacak parklar için lokasyon öneriniz var mı?", "required": False}
-            ]
-        elif "memnuniyet" in topic_lower or "genel" in topic_lower:
-            questions = [
-                {"id": "m1", "type": "multiple_choice", "title": "Belediyemizin genel performansını nasıl değerlendirirsiniz?", "required": True, "options": ["Mükemmel", "İyi", "Orta", "Zayıf"]},
-                {"id": "m2", "type": "checkbox", "title": "En başarılı bulduğunuz hizmet alanları hangileri?", "required": False, "options": ["Temizlik Hizmetleri", "Kültür ve Sanat", "Sosyal Yardımlar", "Altyapı Çalışmaları"]},
-                {"id": "m3", "type": "dropdown", "title": "Belediye binasındaki hizmet hızından memnun musunuz?", "required": True, "options": ["Hızlı", "Normal", "Yavaş"]},
-                {"id": "m4", "type": "paragraph", "title": "Belediye başkanımıza iletmek istediğiniz bir mesaj var mı?", "required": False}
-            ]
-
-        return questions
+            logger.error(f"Erken Uyarı Radarı hatası: {e}")
+            return "[]"
 
     def _default_analysis(self) -> Dict[str, Any]:
         """AI devre dışıyken varsayılan değerler."""

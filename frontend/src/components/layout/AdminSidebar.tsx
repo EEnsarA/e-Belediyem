@@ -3,126 +3,150 @@
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
-import { motion } from 'framer-motion';
 import {
   Building2, LayoutDashboard, AlertCircle, Map, Users, BarChart3,
-  Megaphone, MessageSquare, FileText, Shield, Sun, Moon, LogOut, Zap, Globe
+  Megaphone, MessageSquare, FileText, Shield, Sun, Moon, LogOut, Zap, Globe, Menu
 } from 'lucide-react';
 import { useAuthStore } from '@/store';
 import toast from 'react-hot-toast';
 
 const adminNav = [
-  { href: '/', icon: Globe, label: 'Keşif Platformu' },
-  { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/complaints', icon: AlertCircle, label: 'Şikayetler' },
-  { href: '/admin/map', icon: Map, label: 'Harita Analiz' },
-  { href: '/admin/groups', icon: Zap, label: 'AI Gruplar' },
-  { href: '/admin/announcements', icon: Megaphone, label: 'Duyurular' },
-  { href: '/admin/forms', icon: BarChart3, label: 'Anket & Form Yönetimi' },
-  { href: '/admin/chat', icon: MessageSquare, label: 'Canlı Destek' },
-  { href: '/admin/reports', icon: FileText, label: 'Raporlama' },
-  { href: '/admin/settings', icon: Building2, label: 'Belediye Ayarları' },
-  { href: '/admin/logs', icon: Shield, label: 'Audit Log' },
-  { href: '/admin/users', icon: Users, label: 'Kullanıcılar' },
-]
+  { href: '/',                    icon: Globe,           label: 'Keşif Platformu' },
+  { href: '/admin/dashboard',     icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/admin/complaints',    icon: AlertCircle,     label: 'Şikayetler' },
+  { href: '/admin/map',           icon: Map,             label: 'Harita Analiz' },
+  { href: '/admin/groups',        icon: Zap,             label: 'AI Gruplar' },
+  { href: '/admin/polls',         icon: BarChart3,       label: 'Anket Yönetimi' },
+  { href: '/admin/announcements', icon: Megaphone,       label: 'Duyurular' },
+  { href: '/admin/chat',          icon: MessageSquare,   label: 'Canlı Destek' },
+  { href: '/admin/reports',       icon: FileText,        label: 'Raporlama' },
+  { href: '/admin/settings',      icon: Building2,       label: 'Belediye Ayarları' },
+  { href: '/admin/logs',          icon: Shield,          label: 'Denetim Kayıtları' },
+  { href: '/admin/users',         icon: Users,           label: 'Kullanıcılar' },
+];
 
-export default function AdminSidebar() {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { theme, setTheme } = useTheme()
-  const { user, logout } = useAuthStore()
+interface Props { open: boolean; onToggle: () => void; }
+
+export default function AdminSidebar({ open, onToggle }: Props) {
+  const pathname            = usePathname();
+  const router              = useRouter();
+  const { theme, setTheme } = useTheme();
+  const { user, logout }    = useAuthStore();
 
   const handleLogout = async () => {
-    await logout()
-    toast.success('Çıkış yapıldı')
-    router.push('/login')
-  }
+    await logout();
+    toast.success('Çıkış yapıldı');
+    router.push('/login');
+  };
+
+  /* İkonlar her zaman px-[14px]'de sabit — oynamaz */
+  const row = `flex items-center gap-4 rounded-xl px-[14px] py-[11px] w-full transition-all duration-200 overflow-hidden`;
+  const ico = `shrink-0 w-5 h-5`;
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-primary-900 via-primary-800 to-violet-950 text-white flex flex-col z-40 overflow-hidden shadow-2xl shadow-primary-900/40">
-      {/* Background Decor (Login Style) */}
-      <div className="absolute inset-0 bg-hero-pattern opacity-10 pointer-events-none" />
-      <motion.div 
-        className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none"
-        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 8, repeat: Infinity }}
-      />
+    <aside
+      className={`fixed left-0 top-0 h-screen z-40 flex flex-col
+                  bg-gradient-to-b from-[#0b3830] via-[#0d4a3e] to-[#152040]
+                  border-r border-white/[0.06] shadow-[4px_0_24px_rgba(0,0,0,0.35)]
+                  transition-[width] duration-300 ease-in-out overflow-hidden
+                  ${open ? 'w-64' : 'w-[64px]'}`}
+    >
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at 10% 90%, rgba(16,185,129,0.06) 0%, transparent 60%)' }} />
 
-      <div className="relative z-10 flex flex-col h-full">
-        {/* Logo Area */}
-        <div className="p-8">
-          <Link href="/admin/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg border border-white/20">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-2xl font-black tracking-tighter text-white">e-<span className="text-blue-300">Belediyem</span></div>
-          </Link>
-        </div>
+      <div className="relative z-10 flex flex-col h-full overflow-y-auto overflow-x-hidden px-2 py-3 gap-0.5">
 
-        {/* Municipality Info */}
-        <div className="mx-6 p-4 rounded-3xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center gap-3">
-          {user?.municipality_logo_url && (
-            <div className="w-8 h-8 rounded-lg bg-white/10 p-1 shrink-0 border border-white/10">
-              <img src={user.municipality_logo_url} alt="Logo" className="w-full h-full object-contain" />
-            </div>
+        {/* ☰ Hamburger — sadece ikon, yazı yok */}
+        <button onClick={onToggle} aria-label="Menüyü aç / kapat"
+          className={`${row} text-white/50 hover:text-white hover:bg-white/[0.07]`}>
+          <Menu className={ico} />
+        </button>
+
+        {/* e-Belediyem linki */}
+        <Link href="/admin/dashboard" title={!open ? 'Dashboard' : undefined}
+          className={`${row} text-white/70 hover:text-white hover:bg-white/[0.07]`}>
+          <div className="w-5 h-5 rounded-lg bg-emerald-500/25 border border-emerald-400/25
+                          flex items-center justify-center shrink-0">
+            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          {open && (
+            <span className="text-[18px] font-black tracking-tight whitespace-nowrap">
+              e-<span className="text-emerald-400">Belediyem</span>
+            </span>
           )}
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-black text-blue-300 uppercase tracking-widest mb-0.5">BELEDİYE</div>
-            <div className="text-xs font-bold text-white truncate">{user?.municipality_name}</div>
+        </Link>
+
+        {/* Municipality badge */}
+        {open && user?.municipality_name && (
+          <div className="flex items-center gap-3 px-[14px] py-[8px] rounded-xl
+                          bg-white/[0.05] border border-white/[0.07] mb-1">
+            {user.municipality_logo_url
+              ? <img src={user.municipality_logo_url} alt="" className="w-5 h-5 object-contain rounded shrink-0" />
+              : <div className="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <Building2 className="w-3 h-3 text-emerald-400" />
+                </div>
+            }
+            <span className="text-[13px] font-semibold text-emerald-300 truncate">{user.municipality_name}</span>
           </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-8 space-y-1 overflow-y-auto">
-          {adminNav.map(({ href, icon: Icon, label }) => {
-            const isActive = href === '/' 
-              ? pathname === '/' 
-              : pathname === href || (href !== '/admin/dashboard' && pathname.startsWith(href));
-              
-            return (
-              <Link 
-                key={href} 
-                href={href} 
-                className={`flex items-center gap-4 px-5 py-3 rounded-2xl text-sm font-bold transition-all ${
-                  isActive 
-                    ? 'bg-white text-primary-900 shadow-xl shadow-white/10' 
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-primary-900' : 'text-blue-300'}`} />
-                {label}
-              </Link>
-            )
-          })}
-
-        </nav>
-
-        {/* Bottom Area */}
-        <div className="p-4 space-y-2 border-t border-white/5">
-          <button 
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
-            className="flex items-center gap-4 w-full px-5 py-3 rounded-2xl text-sm font-bold text-white/60 hover:text-white hover:bg-white/5 transition-all"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-blue-300" />}
-            {theme === 'dark' ? 'Açık Tema' : 'Koyu Tema'}
-          </button>
-          
-          <div className="p-4 rounded-3xl bg-white/5 border border-white/10 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-black text-sm">
-              {user?.full_name?.charAt(0) || 'A'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-black text-white truncate">{user?.full_name}</div>
-              <div className="text-[10px] font-bold text-blue-300 uppercase tracking-tighter">YÖNETİCİ</div>
-            </div>
-            <button onClick={handleLogout} className="p-2 hover:bg-red-500/10 rounded-full group transition-all">
-              <LogOut className="w-4 h-4 text-white/40 group-hover:text-red-400" />
-            </button>
+        )}
+        {!open && user?.municipality_logo_url && (
+          <div className="px-[14px] py-[5px]">
+            <img src={user.municipality_logo_url} alt="" title={user.municipality_name ?? ''}
+              className="w-5 h-5 object-contain rounded" />
           </div>
+        )}
+
+        <div className="h-px bg-white/[0.06] my-1" />
+
+        {/* Nav items */}
+        {adminNav.map(({ href, icon: Icon, label }) => {
+          const active = href === '/' ? pathname === '/' :
+            pathname === href || (href !== '/admin/dashboard' && pathname.startsWith(href));
+          return (
+            <Link key={href} href={href} title={!open ? label : undefined}
+              className={`${row} relative
+                ${active ? 'bg-emerald-500/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/[0.07]'}`}>
+              {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-emerald-400" />}
+              <Icon className={`${ico} ${active ? 'text-emerald-400' : 'text-white/50'}`} />
+              {open && <span className="text-[15px] font-semibold whitespace-nowrap flex-1">{label}</span>}
+            </Link>
+          );
+        })}
+
+        <div className="flex-1" />
+        <div className="h-px bg-white/[0.06] my-1" />
+
+        {/* Tema */}
+        <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          title={!open ? (theme === 'dark' ? 'Açık Tema' : 'Koyu Tema') : undefined}
+          className={`${row} text-white/50 hover:text-white hover:bg-white/[0.07]`}>
+          {theme === 'dark'
+            ? <Sun  className={`${ico} text-amber-400`} />
+            : <Moon className={`${ico} text-blue-400`} />}
+          {open && <span className="text-[15px] font-semibold whitespace-nowrap">
+            {theme === 'dark' ? 'Açık Tema' : 'Koyu Tema'}</span>}
+        </button>
+
+        {/* Kullanıcı */}
+        <div className={`flex items-center gap-4 rounded-xl py-[11px] w-full transition-all duration-200 overflow-hidden bg-white/[0.05] border border-white/[0.07] ${open ? 'px-[14px]' : 'px-0 justify-center'}`}>
+          <div className="w-8 h-8 rounded-full bg-emerald-500/25 border border-emerald-400/30
+                          flex items-center justify-center text-emerald-300 font-black text-[12px] shrink-0">
+            {user?.full_name?.charAt(0) ?? 'A'}
+          </div>
+          {open && (
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold text-white leading-tight truncate">{user?.full_name}</p>
+                <p className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Yönetici</p>
+              </div>
+              <button onClick={handleLogout} title="Çıkış yap"
+                className="p-1.5 rounded-lg hover:bg-red-500/15 group transition-all shrink-0">
+                <LogOut className="w-4 h-4 text-white/30 group-hover:text-red-400 transition-colors" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </aside>
-
-  )
+  );
 }
-

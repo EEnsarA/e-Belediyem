@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
@@ -12,7 +13,7 @@ from app.models.conversation import Conversation
 from app.schemas.dashboard import (
     AdminDashboardResponse, DashboardStats, ComplaintsByStatus,
     ComplaintsByCategory, WeeklyTrend, MapDataResponse, ComplaintGroupResponse,
-    ReportRequest
+    ReportRequest, EarlyWarningResponse, EarlyWarningAlert
 )
 from app.services.ai_service import ai_service
 from app.services.report_service import report_service
@@ -61,15 +62,16 @@ async def get_dashboard(
     )
 
     # Duruma göre dağılım
+    status_counts_r = await db.execute(
+        select(Complaint.status, func.count(Complaint.id))
+        .where(Complaint.municipality_id == muni_id, Complaint.is_hidden == False)
+        .group_by(Complaint.status)
+    )
+    status_counts = dict(status_counts_r.all())
+
     status_data = []
     for s in ComplaintStatus:
-        count_r = await db.execute(
-            select(func.count(Complaint.id)).where(
-                Complaint.municipality_id == muni_id,
-                Complaint.status == s,
-            )
-        )
-        count = count_r.scalar_one()
+        count = status_counts.get(s, 0)
         status_data.append(ComplaintsByStatus(
             status=s.value,
             count=count,
@@ -84,37 +86,37 @@ async def get_dashboard(
     ]
 
     # Haftalık trend (son 7 gün)
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=6)
+    seven_days_ago = seven_days_ago.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    from sqlalchemy import or_
+    recent_complaints_r = await db.execute(
+        select(Complaint.created_at, Complaint.status, Complaint.updated_at)
+        .where(
+            Complaint.municipality_id == muni_id,
+            Complaint.is_hidden == False,
+            or_(
+                Complaint.created_at >= seven_days_ago,
+                and_(Complaint.status == ComplaintStatus.RESOLVED, Complaint.updated_at >= seven_days_ago)
+            )
+        )
+    )
+    recent_complaints = recent_complaints_r.all()
+
     weekly = []
     for i in range(6, -1, -1):
         day = datetime.now(timezone.utc) - timedelta(days=i)
         day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + timedelta(days=1)
 
-        day_total_r = await db.execute(
-            select(func.count(Complaint.id)).where(
-                and_(
-                    Complaint.municipality_id == muni_id,
-                    Complaint.created_at >= day_start,
-                    Complaint.created_at < day_end,
-                )
-            )
-        )
-        day_resolved_r = await db.execute(
-            select(func.count(Complaint.id)).where(
-                and_(
-                    Complaint.municipality_id == muni_id,
-                    Complaint.status == ComplaintStatus.RESOLVED,
-                    Complaint.updated_at >= day_start,
-                    Complaint.updated_at < day_end,
-                )
-            )
-        )
+        day_total = sum(1 for c in recent_complaints if c.created_at and day_start <= c.created_at.replace(tzinfo=timezone.utc) < day_end)
+        day_resolved = sum(1 for c in recent_complaints if c.status == ComplaintStatus.RESOLVED and c.updated_at and day_start <= c.updated_at.replace(tzinfo=timezone.utc) < day_end)
+
         weekly.append(WeeklyTrend(
             date=day.strftime("%d.%m"),
-            complaints=day_total_r.scalar_one(),
-            resolved=day_resolved_r.scalar_one(),
+            complaints=day_total,
+            resolved=day_resolved,
         ))
-
     # Acil şikayetler
     urgent = await repo.get_recent_urgent(muni_id, limit=5)
     urgent_data = [
@@ -130,16 +132,7 @@ async def get_dashboard(
 
     # AI brifing (haftalık)
     ai_summary = None
-    try:
-        ai_summary = await ai_service.generate_weekly_briefing({
-            "total": total,
-            "resolved": resolved,
-            "pending": stats_raw["pending"],
-            "avg_satisfaction": avg_sat,
-            "top_category": category_data[0].category if category_data else "Bilinmiyor",
-        })
-    except Exception:
-        pass
+    ai_summary = None
 
     return AdminDashboardResponse(
         stats=dashboard_stats,
@@ -149,6 +142,100 @@ async def get_dashboard(
         recent_urgent=urgent_data,
         ai_summary=ai_summary,
     )
+
+@router.get("/early-warnings", response_model=EarlyWarningResponse)
+async def get_early_warnings(
+    current_user=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Yapay zeka ile son şikayetleri gruplayarak erken uyarı ve kriz radarı sinyallerini getirir."""
+    import json
+    
+    muni_id = current_user.municipality_id
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+
+    # Son 7 günün şikayetlerini çek
+    recent_r = await db.execute(
+        select(Complaint.id, Complaint.category, Complaint.address_text, Complaint.description, Complaint.status)
+        .where(
+            Complaint.municipality_id == muni_id,
+            Complaint.is_hidden == False,
+            Complaint.created_at >= seven_days_ago
+        )
+        .order_by(desc(Complaint.created_at))
+        .limit(100) # Token limitine takılmamak için son 100 şikayet
+    )
+    
+    recent_complaints = recent_r.all()
+    
+    # Prompt için minimize edilmiş veri listesi
+    compact_data = [
+        {
+            "id": c.id,
+            "cat": c.category.value if c.category else "Diğer",
+            "loc": c.address_text or "Bilinmiyor",
+            "desc": c.description[:100]  # Kısaltılmış metin
+        }
+        for c in recent_complaints
+    ]
+
+    alerts_list = []
+    
+    try:
+        # AI'a gönder (asenkron timeout ile)
+        coro = ai_service.generate_early_warnings(compact_data)
+        ai_response_str = await asyncio.wait_for(coro, timeout=5.0) # Radar daha detaylı analiz yapar, 5 sn bekle
+        
+        if ai_response_str and ai_response_str != "[]":
+            parsed_alerts = json.loads(ai_response_str)
+            for a in parsed_alerts:
+                alerts_list.append(EarlyWarningAlert(**a))
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Early warnings API hatası: {e}")
+
+    return EarlyWarningResponse(
+        alerts=alerts_list,
+        generated_at=datetime.now(timezone.utc)
+    )
+
+@router.get("/ai-briefing")
+async def get_ai_briefing(
+    current_user=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Sadece yapay zeka haftalık brifingini asenkron olarak döndürür."""
+    muni_id = current_user.municipality_id
+    repo = ComplaintRepository(db)
+    stats_raw = await repo.get_stats(muni_id)
+    
+    # Kategori istatistikleri (En çok şikayet alınan kategoriyi bulmak için)
+    category_r = await db.execute(
+        select(Complaint.category, func.count(Complaint.id).label("count"))
+        .where(Complaint.municipality_id == muni_id, Complaint.category.isnot(None))
+        .group_by(Complaint.category)
+        .order_by(desc("count"))
+        .limit(1)
+    )
+    top_cat = category_r.first()
+    
+    total = stats_raw["total"]
+    resolved = stats_raw["resolved"]
+    avg_sat = round(stats_raw["avg_satisfaction"], 1) if stats_raw["avg_satisfaction"] else None
+
+    try:
+        summary = await ai_service.generate_weekly_briefing({
+            "total": total,
+            "resolved": resolved,
+            "pending": stats_raw["pending"],
+            "avg_satisfaction": avg_sat,
+            "top_category": top_cat.category.value if top_cat and top_cat.category else "Bilinmiyor",
+        })
+        return {"summary": summary}
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"AI Briefing API hatası: {e}")
+        return {"summary": "Haftalık analiz şu an tamamlanamadı."}
 
 
 @router.get("/map", response_model=MapDataResponse)
@@ -212,7 +299,7 @@ async def generate_report(
         page_size=100,
     )
     muni_result = await db.execute(
-        sa_select(Municipality).where(Municipality.id == current_user.municipality_id)
+        select(Municipality).where(Municipality.id == current_user.municipality_id)
     )
     municipality = muni_result.scalar_one_or_none()
     muni_name = municipality.name if municipality else "Belediye"

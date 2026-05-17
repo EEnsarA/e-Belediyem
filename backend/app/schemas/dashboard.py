@@ -46,6 +46,17 @@ class AdminDashboardResponse(BaseModel):
     recent_urgent: List[Dict[str, Any]]
     ai_summary: Optional[str]  # Haftalık AI brifing
 
+class EarlyWarningAlert(BaseModel):
+    title: str
+    location: str
+    risk_level: str  # high, medium, low
+    description: str
+    action_recommended: str
+
+class EarlyWarningResponse(BaseModel):
+    alerts: List[EarlyWarningAlert]
+    generated_at: datetime
+
 
 class MapDataResponse(BaseModel):
     points: List[Dict[str, Any]]
