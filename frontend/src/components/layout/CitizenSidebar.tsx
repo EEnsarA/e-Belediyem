@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import {
   Building2, Home, AlertCircle, Map, BarChart3, MessageSquare,
-  Megaphone, User, LogOut, Sun, Moon, Globe, Menu
+  Megaphone, User, LogOut, Sun, Moon, Globe, Menu, FileText
 } from 'lucide-react';
 import { useAuthStore } from '@/store';
 import toast from 'react-hot-toast';
@@ -15,6 +15,7 @@ const citizenNav = [
   { href: '/dashboard',      icon: Home,          label: 'Ana Sayfa' },
   { href: '/complaints',     icon: AlertCircle,   label: 'Şikayetlerim' },
   { href: '/complaints/new', icon: AlertCircle,   label: 'Şikayet Oluştur' },
+  { href: '/documents',      icon: FileText,      label: 'E-Belgeler' },
   { href: '/map',            icon: Map,           label: 'Harita' },
   { href: '/polls',          icon: BarChart3,     label: 'Anketler' },
   { href: '/announcements',  icon: Megaphone,     label: 'Duyurular' },

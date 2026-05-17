@@ -4,6 +4,52 @@ import { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Sparkles, Loader2, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '@/lib/api/client'
+import Link from 'next/link'
+
+// Linkleri ve kalın yazıları parse eden yardımcı fonksiyon
+const parseMessage = (text: string) => {
+  if (!text) return null;
+
+  // AI bazen linkleri kalın yazmak için **[Link](url)** üretiyor, bu yıldızları temizleyelim
+  const cleanText = text.replace(/\*\*\[(.*?)\]\((.*?)\)\*\*/g, '[$1]($2)');
+
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(cleanText)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(cleanText.substring(lastIndex, match.index));
+    }
+    parts.push(
+      <Link key={match.index} href={match[2]} className="inline-flex items-center text-emerald-600 dark:text-emerald-400 font-bold hover:underline mx-1">
+        {match[1].replace(/\*\*/g, '')}
+      </Link>
+    );
+    lastIndex = linkRegex.lastIndex;
+  }
+  if (lastIndex < cleanText.length) {
+    parts.push(cleanText.substring(lastIndex));
+  }
+
+  return parts.map((part, index) => {
+    if (typeof part === 'string') {
+      const boldParts = part.split(/(\*\*.*?\*\*)/g);
+      return (
+        <span key={index}>
+          {boldParts.map((bp, j) => {
+            if (bp.startsWith('**') && bp.endsWith('**')) {
+              return <strong key={j} className="font-bold text-surface-900 dark:text-white">{bp.slice(2, -2)}</strong>;
+            }
+            return bp;
+          })}
+        </span>
+      );
+    }
+    return part;
+  });
+}
 
 export default function DashboardChatbot() {
   const [messages, setMessages] = useState<{ role: 'ai' | 'user'; content: string }[]>([
@@ -30,10 +76,10 @@ export default function DashboardChatbot() {
     try {
       const res = await api.quickChat(userMessage)
       setMessages(prev => [...prev, { role: 'ai', content: res.content }])
-    } catch (err) {
-      // Fallback for demo if endpoint not ready
+    } catch (err: any) {
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'ai', content: "Şu an bağlantı kurulamadı, ancak genel olarak ehliyet başvuruları nüfus müdürlüklerinden yapılmaktadır. Başka bir sorunuz var mı?" }])
+        const errorDetail = err.response?.data?.detail || err.message || "Bilinmeyen Hata";
+        setMessages(prev => [...prev, { role: 'ai', content: `API Hatası: ${errorDetail}` }])
         setIsLoading(false)
       }, 1000)
       return
@@ -62,7 +108,7 @@ export default function DashboardChatbot() {
       </div>
 
       {/* Messages */}
-      <div 
+      <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth"
       >
@@ -73,12 +119,11 @@ export default function DashboardChatbot() {
             animate={{ opacity: 1, x: 0 }}
             className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}
           >
-            <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-              msg.role === 'ai' 
-                ? 'bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-200 shadow-sm border border-surface-100 dark:border-surface-700' 
-                : 'bg-primary-500 text-white shadow-md'
-            }`}>
-              {msg.content}
+            <div className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed ${msg.role === 'ai'
+              ? 'bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-200 shadow-sm border border-surface-100 dark:border-surface-700'
+              : 'bg-primary-500 text-white shadow-md'
+              }`}>
+              {parseMessage(msg.content)}
             </div>
           </motion.div>
         ))}

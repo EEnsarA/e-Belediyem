@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { AlertCircle, CheckCircle2, Clock, Plus, ChevronRight, BarChart3, Megaphone, MessageSquare, Zap, ShieldAlert, Heart, Info, ArrowRight } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Clock, Plus, ChevronRight, BarChart3, Megaphone, MessageSquare, Zap, ShieldAlert, Heart, Info, ArrowRight, FileText } from 'lucide-react'
 import { useAuthStore } from '@/store'
 import api from '@/lib/api/client'
 import { Complaint, Poll, Announcement } from '@/types'
@@ -45,9 +45,9 @@ export default function DashboardPage() {
 
   const quickActions = [
     { title: 'Şikayet Oluştur', desc: 'Sorunları bildir', icon: Plus, color: 'bg-primary-500', href: '/complaints/new' },
+    { title: 'E-Belge Al', desc: 'Resmi evrak oluştur', icon: FileText, color: 'bg-emerald-500', href: '/documents' },
     { title: 'İhbar Hattı', desc: 'Acil durum ihbarı', icon: ShieldAlert, color: 'bg-red-500', href: '/complaints/new?type=ihbar' },
     { title: 'Anketlere Katıl', desc: 'Kararlara ortak ol', icon: BarChart3, color: 'bg-amber-500', href: '/polls' },
-    { title: 'Şikayetleri Gör', desc: 'Mahallendeki sorunlar', icon: Info, color: 'bg-blue-500', href: '/complaints' },
   ]
 
   return (

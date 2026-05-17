@@ -139,7 +139,7 @@ Kişisel bilgilere değinme.
                 knowledge_prompt = f"\nBELEDİYE BİLGİ MERKEZİ VERİLERİ:\n{knowledge_context}\n"
 
             prompt = f"""
-Sen bir belediye dijital asistanısın. Vatandaşların sorularını kibarca, doğru ve özlü şekilde yanıtlıyorsun.
+Sen son teknoloji bir 'Akıllı Belediye Dijital Asistanı'sın. Amacın vatandaşların sorunlarını dinlemek, onları doğru belgelere yönlendirmek ve gerektiğinde hukuki dilekçe/şikayet metni oluşturmalarına yardımcı olmaktır.
 {knowledge_prompt}
 Konu: {topic}
 Konuşma geçmişi:
@@ -147,11 +147,14 @@ Konuşma geçmişi:
 
 Vatandaş: {message}
 
-KURALLARA: 
-1. Eğer yukarıdaki 'BELEDİYE BİLGİ MERKEZİ VERİLERİ' kısmında aranan cevap varsa oradaki bilgiyi önceliklendir.
-2. Kişisel veri isteme. 
-3. Belediye hizmetleri hakkında genel bilgi ver.
-4. Yanıtı kısa tut (max 200 kelime). Türkçe yanıt ver.
+GÖREVLERİN VE KURALLAR:
+1. Akıllı Belge Yönlendirmesi: Eğer vatandaş ev satışı, adres kaydı, evlilik, dükkan açılışı, vb. bir konudan bahsediyorsa; ihtiyacı olan belgeleri tespit et ve doğrudan o belgeyi üretecek butonu Markdown formatında ver. 
+Şu ID'leri kullan: borc, ikametgah, rayic, cevre, evlenme, ruhsat, numarataj, sosyal, askerlik, mezar.
+Örnek kullanım: [Hemen Evlenme Ehliyet Belgesi Al](/documents?doc=evlenme) veya [İkametgah Belgenizi Oluşturun](/documents?doc=ikametgah)
+2. Otomatik Dilekçe/Şikayet Oluşturma: Eğer vatandaş bir sorun bildiriyorsa, onun anlattığı derdi derleyip "Kısa, resmi bir belediye talep dilekçesi" formatına dönüştür. Ardından bu metni [Şikayet Oluştur](/complaints/new) sayfasından kopyalayıp gönderebileceğini söyle.
+3. Eğer sorulan soru 'BELEDİYE BİLGİ MERKEZİ VERİLERİ' kısmında mevcutsa, o bilgiyi önceliklendir.
+4. Yanıtlarını çok uzun tutma (max 200 kelime). Konuşmayı sıcak ve profesyonel tut.
+5. Linkleri mutlaka Markdown formatında yaz.
 
 Asistan:"""
             response = self._text_model.generate_content(prompt)
@@ -252,6 +255,80 @@ Dikkat: `risk_level` sadece "high", "medium" veya "low" olabilir. SADECE JSON di
         except Exception as e:
             logger.error(f"Erken Uyarı Radarı hatası: {e}")
             return "[]"
+
+    async def generate_form_questions(self, topic: str) -> List[Dict[str, Any]]:
+        """Verilen konuya göre yapay zeka ile anket/form soruları üretir."""
+        if not self.enabled:
+            return self._get_fallback_questions(topic)
+
+        try:
+            prompt = f"""
+            Sen bir belediye anket uzmanısın. "{topic}" konusu hakkında vatandaşlara sorulacak profesyonel bir anket tasarla.
+            
+            Lütfen aşağıdaki kurallara göre tam olarak 5 soru üret:
+            1. Sorular; 'short_text', 'paragraph', 'multiple_choice', 'checkbox', 'dropdown' tiplerinden karma olmalı.
+            2. Her soru için bir benzersiz 'id' (string) üret.
+            3. Seçenekli sorularda 'options' listesi ekle.
+            4. Yanıtı SADECE aşağıdaki JSON formatında ver, başka hiçbir metin ekleme (markdown code block kullanma, sadece ham JSON):
+            
+            [
+              {{
+                "id": "q1",
+                "type": "multiple_choice",
+                "title": "Soru metni?",
+                "required": true,
+                "options": ["A", "B", "C"]
+              }}
+            ]
+            """
+            response = self._text_model.generate_content(prompt)
+            text = response.text.strip()
+            
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+            
+            return json.loads(text)
+        except Exception as e:
+            logger.error(f"Soru üretme hatası: {e}")
+            # Kota aşımı veya hata durumunda fallback (yedek) sorular dön
+            return self._get_fallback_questions(topic)
+
+    def _get_fallback_questions(self, topic: str) -> List[Dict[str, Any]]:
+        """API kotası dolduğunda veya hata alındığında dönülecek örnek sorular."""
+        topic_lower = topic.lower()
+        
+        # Varsayılan sorular (Eğer konu eşleşmezse)
+        questions = [
+            {"id": "f1", "type": "short_text", "title": "Adınız ve Soyadınız", "required": True},
+            {"id": "f2", "type": "multiple_choice", "title": "Hizmetimizden ne kadar memnunsunuz?", "required": True, "options": ["Çok Memnunum", "Memnunum", "Kararsızım", "Memnun Değilim"]},
+            {"id": "f3", "type": "paragraph", "title": "Görüş ve önerileriniz nelerdir?", "required": False}
+        ]
+
+        if "ulaşım" in topic_lower or "otobüs" in topic_lower or "metro" in topic_lower:
+            questions = [
+                {"id": "u1", "type": "multiple_choice", "title": "En sık hangi toplu taşıma aracını kullanıyorsunuz?", "required": True, "options": ["Otobüs", "Metro", "Metrobüs", "Tramvay"]},
+                {"id": "u2", "type": "dropdown", "title": "Sefer sıklıklarından memnun musunuz?", "required": True, "options": ["Evet, yeterli", "Hayır, yetersiz", "Kısmen"]},
+                {"id": "u3", "type": "checkbox", "title": "İyileştirilmesini istediğiniz alanlar hangileri?", "required": False, "options": ["Araç temizliği", "Şoför nezaketi", "Dakiklik", "Durak konforu"]},
+                {"id": "u4", "type": "paragraph", "title": "Eklemek istediğiniz ulaşım sorunu var mı?", "required": False}
+            ]
+        elif "park" in topic_lower or "yeşil alan" in topic_lower or "bahçe" in topic_lower:
+            questions = [
+                {"id": "p1", "type": "multiple_choice", "title": "Mahallenizdeki parkları ne sıklıkla ziyaret ediyorsunuz?", "required": True, "options": ["Her gün", "Haftada birkaç kez", "Ayda bir", "Hiç"]},
+                {"id": "p2", "type": "checkbox", "title": "Parklarda hangi donatıların artırılmasını istersiniz?", "required": False, "options": ["Çocuk oyun alanı", "Spor aletleri", "Bank ve oturma yerleri", "Aydınlatma"]},
+                {"id": "p3", "type": "dropdown", "title": "Park temizliğinden memnun musunuz?", "required": True, "options": ["Çok Memnunum", "Memnunum", "Memnun Değilim"]},
+                {"id": "p4", "type": "paragraph", "title": "Yeni yapılacak parklar için lokasyon öneriniz var mı?", "required": False}
+            ]
+        elif "memnuniyet" in topic_lower or "genel" in topic_lower:
+            questions = [
+                {"id": "m1", "type": "multiple_choice", "title": "Belediyemizin genel performansını nasıl değerlendirirsiniz?", "required": True, "options": ["Mükemmel", "İyi", "Orta", "Zayıf"]},
+                {"id": "m2", "type": "checkbox", "title": "En başarılı bulduğunuz hizmet alanları hangileri?", "required": False, "options": ["Temizlik Hizmetleri", "Kültür ve Sanat", "Sosyal Yardımlar", "Altyapı Çalışmaları"]},
+                {"id": "m3", "type": "dropdown", "title": "Belediye binasındaki hizmet hızından memnun musunuz?", "required": True, "options": ["Hızlı", "Normal", "Yavaş"]},
+                {"id": "m4", "type": "paragraph", "title": "Belediye başkanımıza iletmek istediğiniz bir mesaj var mı?", "required": False}
+            ]
+
+        return questions
 
     def _default_analysis(self) -> Dict[str, Any]:
         """AI devre dışıyken varsayılan değerler."""
