@@ -82,10 +82,11 @@ export default function RootDiscoverPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [globalComplaints, setGlobalComplaints] = useState<PublicComplaint[]>([])
   const [globalPolls, setGlobalPolls] = useState<GlobalPoll[]>([])
+  const [globalAnnouncements, setGlobalAnnouncements] = useState<any[]>([])
   
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'leaderboard' | 'global' | 'polls' | 'all'>('leaderboard')
+  const [activeTab, setActiveTab] = useState<'leaderboard' | 'global' | 'polls' | 'announcements' | 'all' | 'my-muni'>('leaderboard')
   const [loginModalOpen, setLoginModalOpen] = useState(false)
   const [loginAction, setLoginAction] = useState('')
 
@@ -94,16 +95,18 @@ export default function RootDiscoverPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [muniData, lbData, gcData, pollsData] = await Promise.all([
+      const [muniData, lbData, gcData, pollsData, annData] = await Promise.all([
         api.discoverMunicipalities({ search: search || undefined }),
         api.getLeaderboard(),
         api.getGlobalPublicComplaints({ sort: 'upvotes' }),
-        api.getGlobalPolls()
+        api.getGlobalPolls(),
+        api.getGlobalAnnouncements()
       ])
       setMunicipalities(muniData.municipalities || [])
       setLeaderboard(lbData.leaderboard || [])
       setGlobalComplaints(gcData.items || [])
       setGlobalPolls(pollsData.items || [])
+      setGlobalAnnouncements(annData.items || [])
     } catch (err) {
       console.error(err)
     } finally {
@@ -188,7 +191,7 @@ export default function RootDiscoverPage() {
           <div className="absolute top-6 right-6 z-20">
             <button
               onClick={() => requireAuth('Kendi belediyenizi görüntülemek', () => {
-                document.getElementById('my-municipality')?.scrollIntoView({ behavior: 'smooth' })
+                setActiveTab('my-muni')
               })}
               className="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md rounded-2xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-black/10"
             >
@@ -231,12 +234,14 @@ export default function RootDiscoverPage() {
                 { key: 'leaderboard', label: '🏆 Liderlik Tablosu', icon: Trophy },
                 { key: 'global', label: '🔥 Öne Çıkan Şikayetler', icon: ThumbsUp },
                 { key: 'polls', label: '📊 Faaliyetler ve Anketler', icon: BarChart3 },
+                { key: 'announcements', label: '📢 Duyurular', icon: Megaphone },
                 { key: 'all', label: '🗺 Tüm Belediyeler', icon: Building2 },
+                { key: 'my-muni', label: '🌟 Benim Belediyem', icon: Star },
               ].map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as any)}
-                  className={`px-6 py-3.5 text-sm font-bold rounded-t-2xl transition-all whitespace-nowrap ${
+                  className={`px-4 py-2.5 text-xs md:text-sm font-bold rounded-t-xl transition-all whitespace-nowrap flex items-center gap-2 ${
                     activeTab === tab.key
                       ? 'bg-[#f8fafc] dark:bg-surface-950 text-primary-900 dark:text-primary-100'
                       : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -251,26 +256,116 @@ export default function RootDiscoverPage() {
 
         <div className="max-w-6xl mx-auto px-6 py-8 space-y-10">
           
-          {/* My Municipality Highlight */}
-          {isAuthenticated && myMunicipality && (
-            <motion.div
-              id="my-municipality"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-primary-600/10 to-violet-600/10 border-2 border-primary-200 dark:border-primary-800 rounded-3xl p-6 md:p-8 relative overflow-hidden"
-            >
-              <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary-500/10 rounded-full blur-2xl" />
-              <div className="flex items-center gap-3 mb-6 relative z-10">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Star className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-black text-2xl text-primary-900 dark:text-primary-100">Benim Belediyem</h2>
-                  <p className="text-sm text-primary-700 dark:text-primary-300">Aktif durumunuz ve istatistikler</p>
-                </div>
+          {/* MY MUNI TAB */}
+          {activeTab === 'my-muni' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-black text-surface-900 dark:text-surface-50 flex items-center gap-2">
+                  <Star className="w-6 h-6 text-primary-500" />
+                  Benim Belediyem
+                </h2>
+                <p className="text-sm font-medium text-surface-500">Adresinize kayıtlı belediyeniz</p>
               </div>
-              <MunicipalityCard municipality={myMunicipality} isHighlighted onRequireAuth={requireAuth} />
-            </motion.div>
+
+              {loading ? <LoadingState /> : (isAuthenticated && myMunicipality) ? (
+                <MunicipalityCard municipality={myMunicipality} isHighlighted onRequireAuth={requireAuth} />
+              ) : (
+                <div className="text-center py-24 bg-white dark:bg-surface-900 rounded-3xl border border-surface-100 dark:border-surface-800 shadow-sm">
+                  <div className="w-20 h-20 bg-surface-50 dark:bg-surface-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Star className="w-10 h-10 text-surface-300 dark:text-surface-600" />
+                  </div>
+                  <h3 className="text-xl font-black text-surface-900 dark:text-surface-50 mb-2">Belediyeniz Bulunamadı</h3>
+                  <p className="text-surface-500 max-w-sm mx-auto mb-6">
+                    Kendi belediyenizi görmek için giriş yapmalısınız. Eğer giriş yaptıysanız, adresinize ait belediye henüz platforma dahil olmamış olabilir.
+                  </p>
+                  {!isAuthenticated && (
+                    <Link
+                      href="/login"
+                      className="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-colors inline-block"
+                    >
+                      Giriş Yap
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ANNOUNCEMENTS TAB */}
+          {activeTab === 'announcements' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-black text-surface-900 dark:text-surface-50 flex items-center gap-2">
+                  <Megaphone className="w-6 h-6 text-violet-500" />
+                  Güncel Duyurular
+                </h2>
+                <p className="text-sm font-medium text-surface-500">Türkiye genelindeki son gelişmeler</p>
+              </div>
+
+              {loading ? <LoadingState /> : globalAnnouncements.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {globalAnnouncements.map((ann, i) => (
+                    <motion.div
+                      key={ann.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="bg-white dark:bg-surface-900 rounded-3xl p-6 border border-surface-100 dark:border-surface-800 shadow-sm hover:shadow-xl transition-all group flex flex-col"
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-surface-800 flex items-center justify-center shadow-md overflow-hidden border border-surface-100 dark:border-surface-700">
+                            {ann.logo_url ? (
+                               <img src={ann.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
+                            ) : (
+                               <Megaphone className="w-6 h-6 text-violet-500" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="text-xs text-violet-600 dark:text-violet-400 font-bold uppercase tracking-wider mb-0.5">{ann.municipality_name}</div>
+                            <h3 className="font-bold text-surface-900 dark:text-surface-50 leading-tight line-clamp-1">{ann.title}</h3>
+                          </div>
+                        </div>
+                        {ann.is_pinned && (
+                          <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5 border border-amber-200 dark:border-amber-700/50">
+                            <Star className="w-3 h-3 fill-current" />
+                            Önemli
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-sm text-surface-500 line-clamp-3 mb-6 flex-1">
+                        {ann.content}
+                      </p>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-surface-100 dark:border-surface-800">
+                        <div className="flex items-center gap-2">
+                          {ann.category && (
+                            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider bg-surface-50 dark:bg-surface-800 px-2 py-1 rounded-md">
+                              {ann.category}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-surface-400">
+                          <Clock className="w-4 h-4" />
+                          {ann.created_at ? new Date(ann.created_at).toLocaleDateString('tr-TR') : ''}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-24 bg-white dark:bg-surface-900 rounded-3xl border border-surface-100 dark:border-surface-800 shadow-sm">
+                  <div className="w-20 h-20 bg-surface-50 dark:bg-surface-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Megaphone className="w-10 h-10 text-surface-300 dark:text-surface-600" />
+                  </div>
+                  <h3 className="text-xl font-black text-surface-900 dark:text-surface-50 mb-2">Duyuru Bulunamadı</h3>
+                  <p className="text-surface-500 max-w-sm mx-auto">
+                    Şu an Türkiye genelinde güncel bir duyuru bulunmuyor.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
           {/* GLOBAL FEED TAB */}
@@ -415,7 +510,7 @@ export default function RootDiscoverPage() {
                           {p.ends_at ? `Bitiş: ${new Date(p.ends_at).toLocaleDateString('tr-TR')}` : 'Süresiz'}
                         </div>
                         <button
-                          onClick={() => requireAuth('Ankete katılmak veya incelemek', () => {})}
+                          onClick={() => requireAuth('Ankete katılmak veya incelemek', () => router.push('/polls'))}
                           className="px-4 py-2 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 text-sm font-bold rounded-xl transition-colors"
                         >
                           İncele ve Oy Ver

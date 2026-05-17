@@ -220,4 +220,18 @@
       radial-gradient(at 80% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
       radial-gradient(at 0% 50%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
   }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@media print {
+  body.print-modal-open > *:not(.print-safe) {
+    display: none !important;
+  }
 }

@@ -57,6 +57,17 @@ export default function DocumentsPage() {
     }, 2000)
   }
 
+  useEffect(() => {
+    if (previewDoc) {
+      document.body.classList.add('print-modal-open')
+    } else {
+      document.body.classList.remove('print-modal-open')
+    }
+    return () => {
+      document.body.classList.remove('print-modal-open')
+    }
+  }, [previewDoc])
+
   const handlePrint = () => {
     window.print()
   }
@@ -69,7 +80,7 @@ export default function DocumentsPage() {
     const docNo = `E-BELGE-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`
 
     return createPortal(
-      <div className="fixed inset-0 z-[99999] bg-gray-900/80 flex items-center justify-center p-4 print:p-0 print:bg-white overflow-y-auto backdrop-blur-sm print:block print:relative print:inset-auto">
+      <div className="print-safe fixed inset-0 z-[99999] bg-gray-900/80 flex items-center justify-center p-4 print:p-0 print:bg-white overflow-y-auto backdrop-blur-sm print:block print:relative print:inset-auto">
         <div className="bg-white max-w-4xl w-full min-h-[297mm] print:min-h-0 print:h-auto print:m-0 rounded-xl shadow-2xl relative flex flex-col print:shadow-none print:rounded-none mt-auto mb-auto">
           
           {/* Sadece ekranda görünen işlem çubuğu */}
@@ -90,7 +101,7 @@ export default function DocumentsPage() {
           </div>
 
           {/* A4 Kağıdı İçeriği */}
-          <div className="p-12 print:p-8 flex-1 bg-white relative text-slate-800">
+          <div className="p-12 print:p-8 flex-1 bg-white relative text-slate-800 flex flex-col">
             {/* Filigran */}
             <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none print:opacity-[0.05]">
                <img src={user?.municipality_logo_url || '/logos/default.png'} alt="Filigran" className="w-[500px] h-[500px] object-contain grayscale" />
@@ -153,7 +164,7 @@ export default function DocumentsPage() {
             </div>
 
             {/* İmza ve QR Code Footer */}
-            <div className="mt-20 flex justify-between items-end">
+            <div className="mt-16 mb-8 flex justify-between items-end">
               <div className="flex flex-col items-center border border-slate-300 p-2 bg-white">
                 <QrCode size={80} className="text-slate-800" />
                 <span className="text-[10px] mt-1 text-slate-500 font-mono">DOĞRULAMA KODU</span>
@@ -168,7 +179,7 @@ export default function DocumentsPage() {
               </div>
             </div>
 
-            <div className="absolute bottom-4 left-8 right-8 border-t border-slate-200 pt-4 text-center text-xs text-slate-500">
+            <div className="mt-auto border-t border-slate-200 pt-4 text-center text-xs text-slate-500">
               Bu belge 5070 sayılı Elektronik İmza Kanununun 5. Maddesi gereğince güvenli elektronik imza ile imzalanmıştır. <br/>
               Belge Doğrulama Adresi: https://turkiye.gov.tr/belge-dogrulama
             </div>

@@ -363,3 +363,32 @@ async def get_global_polls(
         
     return {"items": items}
 
+
+@router.get("/global-announcements")
+async def get_global_announcements(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_optional_user)
+):
+    """Tüm Türkiye geneli duyuruları listele."""
+    from app.models.announcement import Announcement
+    from app.models.municipality import Municipality
+    
+    query = select(Announcement, Municipality).join(Municipality).where(Announcement.is_active == True).order_by(desc(Announcement.created_at)).limit(10)
+    result = await db.execute(query)
+    rows = result.all()
+    
+    items = []
+    for ann, muni in rows:
+        items.append({
+            "id": ann.id,
+            "title": ann.title,
+            "content": ann.content[:150] + "..." if len(ann.content) > 150 else ann.content,
+            "category": ann.category,
+            "is_pinned": ann.is_pinned,
+            "municipality_name": muni.name,
+            "province": muni.province,
+            "created_at": ann.created_at.isoformat() if ann.created_at else None,
+            "logo_url": muni.logo_url,
+        })
+        
+    return {"items": items}

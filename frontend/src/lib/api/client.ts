@@ -266,6 +266,11 @@ class ApiClient {
     return res.data
   }
 
+  async getGlobalAnnouncements() {
+    const res = await this.client.get('/discover/global-announcements')
+    return res.data
+  }
+
   // Complaint upvote
   async upvoteComplaint(id: number) {
 
