@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://belediye:belediye_pass_2024@localhost:5432/akilli_belediye"
+    REDIS_URL: str = "redis://localhost:6379"
 
     # JWT
     JWT_SECRET_KEY: str = secrets.token_urlsafe(32)

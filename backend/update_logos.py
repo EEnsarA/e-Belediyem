@@ -5,6 +5,7 @@ import os
 sys.path.insert(0, os.path.abspath("."))
 from app.db.session import async_session_factory
 from app.models.municipality import Municipality
+# pyrefly: ignore [missing-import]
 from sqlalchemy import select
 
 async def main():

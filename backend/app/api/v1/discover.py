@@ -113,7 +113,10 @@ def _calculate_score(stats: dict) -> float:
     return round(score, 1)
 
 
+from fastapi_cache.decorator import cache
+
 @router.get("")
+@cache(expire=30)
 async def discover(
     search: Optional[str] = Query(None, description="Belediye adı veya il ara"),
     province: Optional[str] = Query(None),
@@ -163,6 +166,7 @@ async def discover(
 
 
 @router.get("/leaderboard")
+@cache(expire=60)
 async def leaderboard(
     db: AsyncSession = Depends(get_db),
     _=Depends(get_optional_user),

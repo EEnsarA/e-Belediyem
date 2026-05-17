@@ -5,7 +5,8 @@ export interface User {
   email: string | null
   is_admin: boolean
   municipality_id: number | null
-  municipality_name: string | null
+  municipality_name?: string | null
+  municipality_logo_url?: string | null
   push_enabled: boolean
   email_enabled: boolean
 }
@@ -187,3 +188,36 @@ export type WSMessage =
   | { type: 'new_complaint'; data: Partial<Complaint> }
   | { type: 'chat_message'; data: { conversation_id: number; sender_type: SenderType; content: string } }
   | { type: 'pong' }
+
+// Dynamic Forms
+export type QuestionType = 'short_text' | 'paragraph' | 'multiple_choice' | 'checkbox' | 'dropdown' | 'file_upload'
+
+export interface FormLogicJump {
+  option: string
+  goto_id: string
+}
+
+export interface FormQuestion {
+  id: string
+  type: QuestionType
+  title: string
+  required: boolean
+  options?: string[]
+  logic_jump?: FormLogicJump[]
+}
+
+export interface DynamicForm {
+  id: number
+  title: string
+  description: string | null
+  schema: FormQuestion[]
+  settings: {
+    is_public: boolean
+    allow_multiple_responses: boolean
+    max_responses: number | null
+    expires_at: string | null
+  }
+  is_active: boolean
+  created_at: string
+  responses_count?: number
+}

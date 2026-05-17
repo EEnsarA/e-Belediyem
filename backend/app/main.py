@@ -11,7 +11,7 @@ import os
 
 from app.core.config import settings
 from app.core.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
-from app.api.v1 import auth, complaints, polls, conversations, announcements, admin, discover
+from app.api.v1 import auth, complaints, polls, conversations, announcements, admin, discover, dynamic_forms
 from app.db.session import engine
 from app.db.base import Base
 
@@ -22,10 +22,25 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.backends.inmemory import InMemoryBackend
+from redis import asyncio as aioredis
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup ve shutdown event'leri."""
     logger.info("🚀 Akıllı Belediye API başlatılıyor...")
+
+    # Redis Cache Init
+    try:
+        redis = aioredis.from_url(settings.REDIS_URL, encoding="utf8", decode_responses=True, socket_timeout=1.0)
+        await redis.ping()
+        FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+        logger.info("✅ Redis önbelleği (cache) aktif!")
+    except Exception as e:
+        logger.warning(f"⚠️ Redis bağlantısı başarısız ({e}), bellek içi (In-Memory) önbelleğe geçiliyor...")
+        FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
 
     # Tablolar oluştur (production'da Alembic kullanılır)
     if settings.ENVIRONMENT == "development":
@@ -81,6 +96,7 @@ app.include_router(conversations.router, prefix="/api")
 app.include_router(announcements.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(discover.router, prefix="/api")
+app.include_router(dynamic_forms.router, prefix="/api")
 
 
 @app.get("/api/health", tags=["Health"])

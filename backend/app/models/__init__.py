@@ -7,6 +7,7 @@ from app.models.poll import Poll, Vote
 from app.models.conversation import Conversation, Message
 from app.models.announcement import Announcement, AuditLog
 from app.models.knowledge import KnowledgeBase
+from app.models.dynamic_form import DynamicForm, FormResponse
 
 __all__ = [
     "Base",
@@ -23,4 +24,7 @@ __all__ = [
     "Message",
     "Announcement",
     "AuditLog",
+    "KnowledgeBase",
+    "DynamicForm",
+    "FormResponse",
 ]

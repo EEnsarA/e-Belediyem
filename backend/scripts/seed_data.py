@@ -6,6 +6,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import datetime, timedelta, timezone
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import async_session_factory
 from app.models.municipality import Municipality
@@ -16,6 +17,7 @@ from app.models.complaint import Complaint, ComplaintStatus, ComplaintCategory, 
 from app.models.conversation import Conversation, Message
 from app.models.knowledge import KnowledgeBase
 from app.core.security import hash_tckn
+# pyrefly: ignore [missing-import]
 from sqlalchemy import select, delete
 
 async def seed():

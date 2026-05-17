@@ -7,11 +7,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
 
-try:
-    from pgvector.sqlalchemy import Vector
-    VECTOR_AVAILABLE = True
-except ImportError:
-    VECTOR_AVAILABLE = False
+VECTOR_AVAILABLE = False
 
 
 class ComplaintStatus(str, enum.Enum):

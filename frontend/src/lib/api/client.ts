@@ -81,6 +81,7 @@ class ApiClient {
     page_size?: number
     status?: string
     category?: string
+    sort?: string
   }) {
     const res = await this.client.get('/complaints', { params })
     return res.data
@@ -265,6 +266,47 @@ class ApiClient {
   async removeUpvote(id: number) {
     const res = await this.client.delete(`/complaints/${id}/upvote`)
     return res.data
+  }
+  // Dynamic Forms
+  async getForms() {
+    const res = await this.client.get('/forms')
+    return res.data
+  }
+
+  async getForm(id: number) {
+    const res = await this.client.get(`/forms/${id}`)
+    return res.data
+  }
+
+  async createForm(data: any) {
+    const res = await this.client.post('/forms', data)
+    return res.data
+  }
+
+  async generateAIForm(topic: string) {
+    const res = await this.client.post(`/forms/generate-ai?topic=${encodeURIComponent(topic)}`)
+    return res.data
+  }
+
+  async submitFormResponse(formId: number, answers: any) {
+    const res = await this.client.post(`/forms/${formId}/responses`, answers)
+    return res.data
+  }
+
+  async getFormAnalytics(id: number) {
+    const res = await this.client.get(`/forms/${id}/analytics`)
+    return res.data
+  }
+
+  async exportFormResponses(id: number) {
+    const res = await this.client.get(`/forms/${id}/export`, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `form_${id}_responses.csv`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
   }
 }
 
